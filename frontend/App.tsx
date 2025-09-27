@@ -1,16 +1,80 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { StatusBar } from 'expo-status-bar';
 import { StyleSheet, Text, View, ScrollView, SafeAreaView, TouchableOpacity } from 'react-native';
 import LoginPage from './components/LoginPage';
+import RegisterPage from './components/RegisterPage';
+import Dashboard from './components/Dashboard';
+import MacroTracker from './components/MacroTracker';
+import { AuthService, User } from './services/authService';
 
 export default function App() {
-  const [currentPage, setCurrentPage] = useState<'home' | 'login'>('home');
+  const [currentPage, setCurrentPage] = useState<'home' | 'login' | 'register' | 'dashboard' | 'macro'>('home');
+  const [currentUser, setCurrentUser] = useState<User | null>(null);
+  const [isLoading, setIsLoading] = useState(true);
+
+  useEffect(() => {
+    checkAuthStatus();
+  }, []);
+
+  const checkAuthStatus = async () => {
+    try {
+      const user = await AuthService.getCurrentUser();
+      if (user) {
+        setCurrentUser(user);
+        setCurrentPage('dashboard');
+      }
+    } catch (error) {
+      console.error('Error checking auth status:', error);
+    } finally {
+      setIsLoading(false);
+    }
+  };
 
   const showLoginPage = () => setCurrentPage('login');
+  const showRegisterPage = () => setCurrentPage('register');
   const showHomePage = () => setCurrentPage('home');
+  const showDashboard = () => setCurrentPage('dashboard');
+  const showMacroTracker = () => setCurrentPage('macro');
+
+  const handleLoginSuccess = (user: User) => {
+    setCurrentUser(user);
+    setCurrentPage('dashboard');
+  };
+
+  const handleRegisterSuccess = (user: User) => {
+    setCurrentUser(user);
+    setCurrentPage('dashboard');
+  };
+
+  const handleLogout = () => {
+    setCurrentUser(null);
+    setCurrentPage('home');
+  };
+
+  if (isLoading) {
+    return (
+      <SafeAreaView style={styles.container}>
+        <View style={styles.loadingContainer}>
+          <Text style={styles.loadingText}>Loading Celery...</Text>
+        </View>
+      </SafeAreaView>
+    );
+  }
 
   if (currentPage === 'login') {
-    return <LoginPage onBackToHome={showHomePage} />;
+    return <LoginPage onBackToHome={showHomePage} onLoginSuccess={handleLoginSuccess} onShowRegister={showRegisterPage} />;
+  }
+
+  if (currentPage === 'register') {
+    return <RegisterPage onBackToLogin={showLoginPage} onRegisterSuccess={handleRegisterSuccess} />;
+  }
+
+  if (currentPage === 'dashboard') {
+    return <Dashboard onLogout={handleLogout} onShowMacroTracker={showMacroTracker} />;
+  }
+
+  if (currentPage === 'macro') {
+    return <MacroTracker onBackToHome={showDashboard} />;
   }
 
   return (
@@ -43,10 +107,10 @@ export default function App() {
             </Text>
             
             <View style={styles.featuresList}>
-              <View style={styles.featureItem}>
+              <TouchableOpacity style={styles.featureItem} onPress={showMacroTracker}>
                 <Text style={styles.featureIcon}>📱</Text>
-                <Text style={styles.featureText}>Smart Meal Tracking</Text>
-              </View>
+                <Text style={styles.featureText}>Macro Tracker</Text>
+              </TouchableOpacity>
               <View style={styles.featureItem}>
                 <Text style={styles.featureIcon}>🏋️</Text>
                 <Text style={styles.featureText}>Workout Analysis</Text>
@@ -82,6 +146,17 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
     backgroundColor: '#FFFFFF',
+  },
+  loadingContainer: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+    backgroundColor: '#F0FFF0',
+  },
+  loadingText: {
+    fontSize: 18,
+    color: '#228B22',
+    fontWeight: '500',
   },
   scrollContent: {
     flexGrow: 1,

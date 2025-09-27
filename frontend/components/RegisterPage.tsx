@@ -2,33 +2,46 @@ import React, { useState } from 'react';
 import { StyleSheet, Text, View, TextInput, TouchableOpacity, SafeAreaView, Alert } from 'react-native';
 import { AuthService } from '../services/authService';
 
-interface LoginPageProps {
-  onBackToHome: () => void;
-  onLoginSuccess: (user: any) => void;
-  onShowRegister: () => void;
+interface RegisterPageProps {
+  onBackToLogin: () => void;
+  onRegisterSuccess: (user: any) => void;
 }
 
-export default function LoginPage({ onBackToHome, onLoginSuccess, onShowRegister }: LoginPageProps) {
-  const [email, setEmail] = useState('');
-  const [password, setPassword] = useState('');
+export default function RegisterPage({ onBackToLogin, onRegisterSuccess }: RegisterPageProps) {
+  const [formData, setFormData] = useState({
+    name: '',
+    email: '',
+    password: '',
+    confirmPassword: ''
+  });
   const [isLoading, setIsLoading] = useState(false);
 
-  const handleLogin = async () => {
-    if (!email || !password) {
+  const handleRegister = async () => {
+    if (!formData.name || !formData.email || !formData.password || !formData.confirmPassword) {
       Alert.alert('Error', 'Please fill in all fields');
+      return;
+    }
+
+    if (formData.password !== formData.confirmPassword) {
+      Alert.alert('Error', 'Passwords do not match');
+      return;
+    }
+
+    if (formData.password.length < 6) {
+      Alert.alert('Error', 'Password must be at least 6 characters long');
       return;
     }
 
     setIsLoading(true);
     
     try {
-      const user = await AuthService.login(email, password);
+      const user = await AuthService.register(formData.email, formData.password, formData.name);
       await AuthService.setCurrentUser(user);
-      Alert.alert('Success', `Welcome back, ${user.name}!`, [
-        { text: 'OK', onPress: () => onLoginSuccess(user) }
+      Alert.alert('Success', 'Account created successfully!', [
+        { text: 'OK', onPress: () => onRegisterSuccess(user) }
       ]);
     } catch (error: any) {
-      Alert.alert('Error', error.message || 'Login failed');
+      Alert.alert('Error', error.message || 'Failed to create account');
     } finally {
       setIsLoading(false);
     }
@@ -37,7 +50,7 @@ export default function LoginPage({ onBackToHome, onLoginSuccess, onShowRegister
   return (
     <SafeAreaView style={styles.container}>
       <View style={styles.header}>
-        <TouchableOpacity onPress={onBackToHome} style={styles.backButton}>
+        <TouchableOpacity onPress={onBackToLogin} style={styles.backButton}>
           <Text style={styles.backButtonText}>← Back</Text>
         </TouchableOpacity>
         <Text style={styles.logo}>🥬 Celery</Text>
@@ -45,8 +58,21 @@ export default function LoginPage({ onBackToHome, onLoginSuccess, onShowRegister
 
       <View style={styles.content}>
         <View style={styles.formContainer}>
-          <Text style={styles.title}>Welcome Back</Text>
-          <Text style={styles.subtitle}>Sign in to continue your fitness journey</Text>
+          <Text style={styles.title}>Create Account</Text>
+          <Text style={styles.subtitle}>Join Celery and start your fitness journey</Text>
+
+          <View style={styles.inputContainer}>
+            <Text style={styles.inputLabel}>Full Name</Text>
+            <TextInput
+              style={styles.input}
+              placeholder="Enter your full name"
+              placeholderTextColor="#999"
+              value={formData.name}
+              onChangeText={(text) => setFormData({...formData, name: text})}
+              autoCapitalize="words"
+              autoCorrect={false}
+            />
+          </View>
 
           <View style={styles.inputContainer}>
             <Text style={styles.inputLabel}>Email</Text>
@@ -54,8 +80,8 @@ export default function LoginPage({ onBackToHome, onLoginSuccess, onShowRegister
               style={styles.input}
               placeholder="Enter your email"
               placeholderTextColor="#999"
-              value={email}
-              onChangeText={setEmail}
+              value={formData.email}
+              onChangeText={(text) => setFormData({...formData, email: text})}
               keyboardType="email-address"
               autoCapitalize="none"
               autoCorrect={false}
@@ -68,8 +94,22 @@ export default function LoginPage({ onBackToHome, onLoginSuccess, onShowRegister
               style={styles.input}
               placeholder="Enter your password"
               placeholderTextColor="#999"
-              value={password}
-              onChangeText={setPassword}
+              value={formData.password}
+              onChangeText={(text) => setFormData({...formData, password: text})}
+              secureTextEntry
+              autoCapitalize="none"
+              autoCorrect={false}
+            />
+          </View>
+
+          <View style={styles.inputContainer}>
+            <Text style={styles.inputLabel}>Confirm Password</Text>
+            <TextInput
+              style={styles.input}
+              placeholder="Confirm your password"
+              placeholderTextColor="#999"
+              value={formData.confirmPassword}
+              onChangeText={(text) => setFormData({...formData, confirmPassword: text})}
               secureTextEntry
               autoCapitalize="none"
               autoCorrect={false}
@@ -77,12 +117,12 @@ export default function LoginPage({ onBackToHome, onLoginSuccess, onShowRegister
           </View>
 
           <TouchableOpacity
-            style={[styles.loginButton, isLoading && styles.loginButtonDisabled]}
-            onPress={handleLogin}
+            style={[styles.registerButton, isLoading && styles.registerButtonDisabled]}
+            onPress={handleRegister}
             disabled={isLoading}
           >
-            <Text style={styles.loginButtonText}>
-              {isLoading ? 'Signing In...' : 'Sign In'}
+            <Text style={styles.registerButtonText}>
+              {isLoading ? 'Creating Account...' : 'Create Account'}
             </Text>
           </TouchableOpacity>
 
@@ -92,12 +132,8 @@ export default function LoginPage({ onBackToHome, onLoginSuccess, onShowRegister
             <View style={styles.dividerLine} />
           </View>
 
-          <TouchableOpacity style={styles.registerButton} onPress={onShowRegister}>
-            <Text style={styles.registerButtonText}>Create New Account</Text>
-          </TouchableOpacity>
-
-          <TouchableOpacity style={styles.forgotPassword}>
-            <Text style={styles.forgotPasswordText}>Forgot Password?</Text>
+          <TouchableOpacity style={styles.loginButton} onPress={onBackToLogin}>
+            <Text style={styles.loginButtonText}>Already have an account? Sign In</Text>
           </TouchableOpacity>
         </View>
       </View>
@@ -181,7 +217,7 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     borderColor: '#E0E0E0',
   },
-  loginButton: {
+  registerButton: {
     backgroundColor: '#228B22',
     borderRadius: 12,
     paddingVertical: 16,
@@ -189,10 +225,10 @@ const styles = StyleSheet.create({
     marginTop: 8,
     marginBottom: 24,
   },
-  loginButtonDisabled: {
+  registerButtonDisabled: {
     backgroundColor: '#90EE90',
   },
-  loginButtonText: {
+  registerButtonText: {
     color: '#FFFFFF',
     fontSize: 16,
     fontWeight: '600',
@@ -212,24 +248,10 @@ const styles = StyleSheet.create({
     color: '#999999',
     fontSize: 14,
   },
-  registerButton: {
-    backgroundColor: '#FFFFFF',
-    borderRadius: 12,
-    paddingVertical: 16,
-    alignItems: 'center',
-    borderWidth: 2,
-    borderColor: '#228B22',
-    marginBottom: 16,
-  },
-  registerButtonText: {
-    color: '#228B22',
-    fontSize: 16,
-    fontWeight: '600',
-  },
-  forgotPassword: {
+  loginButton: {
     alignItems: 'center',
   },
-  forgotPasswordText: {
+  loginButtonText: {
     color: '#228B22',
     fontSize: 14,
     textDecorationLine: 'underline',
