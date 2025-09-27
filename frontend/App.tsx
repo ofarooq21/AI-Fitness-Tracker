@@ -2,15 +2,21 @@ import React, { useState } from 'react';
 import { StatusBar } from 'expo-status-bar';
 import { StyleSheet, Text, View, ScrollView, SafeAreaView, TouchableOpacity } from 'react-native';
 import LoginPage from './components/LoginPage';
+import WorkoutTrackerPage from './components/WorkoutTrackerPage';
 
 export default function App() {
-  const [currentPage, setCurrentPage] = useState<'home' | 'login'>('home');
+  const [currentPage, setCurrentPage] = useState<'home' | 'login' | 'workout'>('home');
 
   const showLoginPage = () => setCurrentPage('login');
   const showHomePage = () => setCurrentPage('home');
+  const showWorkoutPage = () => setCurrentPage('workout');
 
   if (currentPage === 'login') {
     return <LoginPage onBackToHome={showHomePage} />;
+  }
+
+  if (currentPage === 'workout') {
+    return <WorkoutTrackerPage onBack={showHomePage} />;
   }
 
   return (
@@ -69,9 +75,14 @@ export default function App() {
           <Text style={styles.ctaSubtitle}>
             Join thousands of users who are already transforming their fitness with Celery.
           </Text>
-          <TouchableOpacity style={styles.ctaButton} onPress={showLoginPage}>
-            <Text style={styles.ctaButtonText}>Get Started</Text>
-          </TouchableOpacity>
+          <View style={styles.ctaButtonRow}>
+            <TouchableOpacity style={[styles.ctaButton, styles.primaryButton]} onPress={showLoginPage}>
+              <Text style={styles.primaryButtonText}>Get Started</Text>
+            </TouchableOpacity>
+            <TouchableOpacity style={[styles.ctaButton, styles.secondaryButton]} onPress={showWorkoutPage}>
+              <Text style={styles.secondaryButtonText}>Open Workout Tracker</Text>
+            </TouchableOpacity>
+          </View>
         </View>
       </ScrollView>
     </SafeAreaView>
@@ -197,8 +208,12 @@ const styles = StyleSheet.create({
     maxWidth: 280,
     marginBottom: 24,
   },
+  ctaButtonRow: {
+    flexDirection: 'column',
+    gap: 12,
+    width: '100%',
+  },
   ctaButton: {
-    backgroundColor: '#228B22',
     borderRadius: 12,
     paddingVertical: 16,
     paddingHorizontal: 32,
@@ -212,8 +227,21 @@ const styles = StyleSheet.create({
     shadowRadius: 4,
     elevation: 3,
   },
-  ctaButtonText: {
+  primaryButton: {
+    backgroundColor: '#228B22',
+  },
+  primaryButtonText: {
     color: '#FFFFFF',
+    fontSize: 16,
+    fontWeight: '600',
+  },
+  secondaryButton: {
+    backgroundColor: '#FFFFFF',
+    borderWidth: 2,
+    borderColor: '#228B22',
+  },
+  secondaryButtonText: {
+    color: '#228B22',
     fontSize: 16,
     fontWeight: '600',
   },
