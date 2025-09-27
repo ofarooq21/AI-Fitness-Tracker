@@ -2,15 +2,21 @@ import React, { useState } from 'react';
 import { StatusBar } from 'expo-status-bar';
 import { StyleSheet, Text, View, ScrollView, SafeAreaView, TouchableOpacity } from 'react-native';
 import LoginPage from './components/LoginPage';
+import MacroTracker from './components/MacroTracker';
 
 export default function App() {
-  const [currentPage, setCurrentPage] = useState<'home' | 'login'>('home');
+  const [currentPage, setCurrentPage] = useState<'home' | 'login' | 'macro'>('home');
 
   const showLoginPage = () => setCurrentPage('login');
   const showHomePage = () => setCurrentPage('home');
+  const showMacroTracker = () => setCurrentPage('macro');
 
   if (currentPage === 'login') {
     return <LoginPage onBackToHome={showHomePage} />;
+  }
+
+  if (currentPage === 'macro') {
+    return <MacroTracker onBackToHome={showHomePage} />;
   }
 
   return (
@@ -43,10 +49,10 @@ export default function App() {
             </Text>
             
             <View style={styles.featuresList}>
-              <View style={styles.featureItem}>
+              <TouchableOpacity style={styles.featureItem} onPress={showMacroTracker}>
                 <Text style={styles.featureIcon}>📱</Text>
-                <Text style={styles.featureText}>Smart Meal Tracking</Text>
-              </View>
+                <Text style={styles.featureText}>Macro Tracker</Text>
+              </TouchableOpacity>
               <View style={styles.featureItem}>
                 <Text style={styles.featureIcon}>🏋️</Text>
                 <Text style={styles.featureText}>Workout Analysis</Text>
