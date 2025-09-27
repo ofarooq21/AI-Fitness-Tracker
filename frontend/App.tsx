@@ -1,7 +1,18 @@
+import React, { useState } from 'react';
 import { StatusBar } from 'expo-status-bar';
-import { StyleSheet, Text, View, ScrollView, SafeAreaView } from 'react-native';
+import { StyleSheet, Text, View, ScrollView, SafeAreaView, TouchableOpacity } from 'react-native';
+import LoginPage from './components/LoginPage';
 
 export default function App() {
+  const [currentPage, setCurrentPage] = useState<'home' | 'login'>('home');
+
+  const showLoginPage = () => setCurrentPage('login');
+  const showHomePage = () => setCurrentPage('home');
+
+  if (currentPage === 'login') {
+    return <LoginPage onBackToHome={showHomePage} />;
+  }
+
   return (
     <SafeAreaView style={styles.container}>
       <StatusBar style="dark" />
@@ -58,6 +69,9 @@ export default function App() {
           <Text style={styles.ctaSubtitle}>
             Join thousands of users who are already transforming their fitness with Celery.
           </Text>
+          <TouchableOpacity style={styles.ctaButton} onPress={showLoginPage}>
+            <Text style={styles.ctaButtonText}>Get Started</Text>
+          </TouchableOpacity>
         </View>
       </ScrollView>
     </SafeAreaView>
@@ -181,5 +195,26 @@ const styles = StyleSheet.create({
     color: '#666666',
     textAlign: 'center',
     maxWidth: 280,
+    marginBottom: 24,
+  },
+  ctaButton: {
+    backgroundColor: '#228B22',
+    borderRadius: 12,
+    paddingVertical: 16,
+    paddingHorizontal: 32,
+    alignItems: 'center',
+    shadowColor: '#000',
+    shadowOffset: {
+      width: 0,
+      height: 2,
+    },
+    shadowOpacity: 0.1,
+    shadowRadius: 4,
+    elevation: 3,
+  },
+  ctaButtonText: {
+    color: '#FFFFFF',
+    fontSize: 16,
+    fontWeight: '600',
   },
 });
