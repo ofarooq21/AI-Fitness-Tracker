@@ -1,14 +1,18 @@
 import React, { useState, useEffect } from 'react';
 import { StatusBar } from 'expo-status-bar';
 import { StyleSheet, Text, View, ScrollView, SafeAreaView, TouchableOpacity } from 'react-native';
+
 import LoginPage from './components/LoginPage';
 import RegisterPage from './components/RegisterPage';
 import Dashboard from './components/Dashboard';
 import MacroTracker from './components/MacroTracker';
+import WorkoutTrackerPage from './components/WorkoutTrackerPage';
 import { AuthService, User } from './services/authService';
 
 export default function App() {
-  const [currentPage, setCurrentPage] = useState<'home' | 'login' | 'register' | 'dashboard' | 'macro'>('home');
+  type Page = 'home' | 'login' | 'register' | 'dashboard' | 'macro' | 'workout';
+
+  const [currentPage, setCurrentPage] = useState<Page>('home');
   const [currentUser, setCurrentUser] = useState<User | null>(null);
   const [isLoading, setIsLoading] = useState(true);
 
@@ -23,19 +27,22 @@ export default function App() {
         setCurrentUser(user);
         setCurrentPage('dashboard');
       }
-    } catch (error) {
-      console.error('Error checking auth status:', error);
+    } catch (e) {
+      console.error('Error checking auth status:', e);
     } finally {
       setIsLoading(false);
     }
   };
 
+  // Navigation helpers
   const showLoginPage = () => setCurrentPage('login');
   const showRegisterPage = () => setCurrentPage('register');
   const showHomePage = () => setCurrentPage('home');
   const showDashboard = () => setCurrentPage('dashboard');
   const showMacroTracker = () => setCurrentPage('macro');
+  const showWorkoutPage = () => setCurrentPage('workout');
 
+  // Auth handlers
   const handleLoginSuccess = (user: User) => {
     setCurrentUser(user);
     setCurrentPage('dashboard');
@@ -51,6 +58,7 @@ export default function App() {
     setCurrentPage('home');
   };
 
+  // Loading gate
   if (isLoading) {
     return (
       <SafeAreaView style={styles.container}>
@@ -61,22 +69,44 @@ export default function App() {
     );
   }
 
+  // Route rendering
   if (currentPage === 'login') {
-    return <LoginPage onBackToHome={showHomePage} onLoginSuccess={handleLoginSuccess} onShowRegister={showRegisterPage} />;
+    return (
+      <LoginPage
+        onBackToHome={showHomePage}
+        onLoginSuccess={handleLoginSuccess}
+        onShowRegister={showRegisterPage}
+      />
+    );
   }
 
   if (currentPage === 'register') {
-    return <RegisterPage onBackToLogin={showLoginPage} onRegisterSuccess={handleRegisterSuccess} />;
+    return (
+      <RegisterPage
+        onBackToLogin={showLoginPage}
+        onRegisterSuccess={handleRegisterSuccess}
+      />
+    );
   }
 
   if (currentPage === 'dashboard') {
-    return <Dashboard onLogout={handleLogout} onShowMacroTracker={showMacroTracker} />;
+    return (
+      <Dashboard
+        onLogout={handleLogout}
+        onShowMacroTracker={showMacroTracker}
+      />
+    );
   }
 
   if (currentPage === 'macro') {
     return <MacroTracker onBackToHome={showDashboard} />;
   }
 
+  if (currentPage === 'workout') {
+    return <WorkoutTrackerPage onBack={showHomePage} />;
+  }
+
+  // Home / Landing
   return (
     <SafeAreaView style={styles.container}>
       <StatusBar style="dark" />
@@ -91,7 +121,7 @@ export default function App() {
         <View style={styles.hero}>
           <Text style={styles.heroTitle}>Track. Analyze. Achieve.</Text>
           <Text style={styles.heroSubtitle}>
-            Transform your fitness journey with intelligent meal tracking, 
+            Transform your fitness journey with intelligent meal tracking,
             workout analysis, and personalized goal setting powered by AI.
           </Text>
         </View>
@@ -101,11 +131,10 @@ export default function App() {
           <Text style={styles.sectionTitle}>About Celery</Text>
           <View style={styles.aboutContent}>
             <Text style={styles.aboutText}>
-              Celery is a comprehensive fitness and nutrition tracking application 
-              that combines the power of artificial intelligence with intuitive design 
-              to help you achieve your health goals.
+              Celery is a comprehensive fitness and nutrition tracking application
+              that combines AI with intuitive design to help you achieve your goals.
             </Text>
-            
+
             <View style={styles.featuresList}>
               <TouchableOpacity style={styles.featureItem} onPress={showMacroTracker}>
                 <Text style={styles.featureIcon}>📱</Text>
@@ -121,7 +150,7 @@ export default function App() {
               </View>
               <View style={styles.featureItem}>
                 <Text style={styles.featureIcon}>🤖</Text>
-                <Text style={styles.featureText}>AI-Powered Insights</Text>
+                <Text style={styles.featureText}>AI Insights</Text>
               </View>
             </View>
           </View>
@@ -131,11 +160,16 @@ export default function App() {
         <View style={styles.ctaSection}>
           <Text style={styles.ctaTitle}>Ready to Start Your Journey?</Text>
           <Text style={styles.ctaSubtitle}>
-            Join thousands of users who are already transforming their fitness with Celery.
+            Join thousands already transforming their fitness with Celery.
           </Text>
-          <TouchableOpacity style={styles.ctaButton} onPress={showLoginPage}>
-            <Text style={styles.ctaButtonText}>Get Started</Text>
-          </TouchableOpacity>
+          <View style={styles.ctaButtonRow}>
+            <TouchableOpacity style={[styles.ctaButton, styles.primaryButton]} onPress={showLoginPage}>
+              <Text style={styles.primaryButtonText}>Get Started</Text>
+            </TouchableOpacity>
+            <TouchableOpacity style={[styles.ctaButton, styles.secondaryButton]} onPress={showWorkoutPage}>
+              <Text style={styles.secondaryButtonText}>Open Workout Tracker</Text>
+            </TouchableOpacity>
+          </View>
         </View>
       </ScrollView>
     </SafeAreaView>
@@ -225,7 +259,7 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     flexWrap: 'wrap',
     justifyContent: 'center',
-    gap: 20,
+    gap: 20, // If RN version is old, replace with margins on children
   },
   featureItem: {
     alignItems: 'center',
@@ -234,10 +268,7 @@ const styles = StyleSheet.create({
     backgroundColor: '#FFFFFF',
     borderRadius: 12,
     shadowColor: '#000',
-    shadowOffset: {
-      width: 0,
-      height: 2,
-    },
+    shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.1,
     shadowRadius: 4,
     elevation: 3,
@@ -272,23 +303,37 @@ const styles = StyleSheet.create({
     maxWidth: 280,
     marginBottom: 24,
   },
+  ctaButtonRow: {
+    flexDirection: 'column',
+    gap: 12, // If RN version is old, replace with marginTop on buttons
+    width: '100%',
+  },
   ctaButton: {
-    backgroundColor: '#228B22',
     borderRadius: 12,
     paddingVertical: 16,
     paddingHorizontal: 32,
     alignItems: 'center',
     shadowColor: '#000',
-    shadowOffset: {
-      width: 0,
-      height: 2,
-    },
+    shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.1,
     shadowRadius: 4,
     elevation: 3,
   },
-  ctaButtonText: {
+  primaryButton: {
+    backgroundColor: '#228B22',
+  },
+  primaryButtonText: {
     color: '#FFFFFF',
+    fontSize: 16,
+    fontWeight: '600',
+  },
+  secondaryButton: {
+    backgroundColor: '#FFFFFF',
+    borderWidth: 2,
+    borderColor: '#228B22',
+  },
+  secondaryButtonText: {
+    color: '#228B22',
     fontSize: 16,
     fontWeight: '600',
   },
