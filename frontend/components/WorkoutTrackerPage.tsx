@@ -22,8 +22,29 @@ interface WorkoutEntry {
   notes?: string;
 }
 
+type GoalType = 'WorkoutsPerWeek' | 'MinutesPerWeek';
+
+type GoalStatus = 'Active' | 'Completed';
+
+interface Goal {
+  id: string;
+  title: string;
+  type: GoalType;
+  targetValue: number;
+  status: GoalStatus;
+  startDate: string;
+  endDate?: string;
+  notes?: string;
+}
+
 interface WorkoutTrackerPageProps {
   onBack: () => void;
+}
+
+interface WeeklySummary {
+  completedThisWeek: number;
+  totalMinutes: number;
+  currentStreak: number;
 }
 
 const INITIAL_WORKOUTS: WorkoutEntry[] = [
@@ -77,6 +98,86 @@ const focusIcons: Record<WorkoutEntry['focus'], string> = {
   Mobility: '🧘',
 };
 
+const GOAL_TYPE_CONFIG: Record<GoalType, { label: string; unit: string; description: string }> = {
+  WorkoutsPerWeek: {
+    label: 'Workouts / Week',
+    unit: 'workouts',
+    description: 'Keep your weekly training consistent.',
+  },
+  MinutesPerWeek: {
+    label: 'Active Minutes / Week',
+    unit: 'minutes',
+    description: 'Hit a target amount of active training minutes.',
+  },
+};
+
+const INITIAL_GOALS: Goal[] = [
+  {
+    id: 'goal-1',
+    title: '3 training days this week',
+    type: 'WorkoutsPerWeek',
+    targetValue: 3,
+    status: 'Active',
+    startDate: new Date().toISOString(),
+    notes: 'Keep sessions full-body focused.',
+  },
+  {
+    id: 'goal-2',
+    title: '150 active minutes',
+    type: 'MinutesPerWeek',
+    targetValue: 150,
+    status: 'Active',
+    startDate: new Date().toISOString(),
+    notes: 'Mix tempo runs with mobility drills.',
+  },
+];
+
+const GOAL_STATUS_COLORS: Record<'Achieved' | 'On Track' | 'Needs Focus' | 'Completed', string> = {
+  Completed: '#2D6A4F',
+  Achieved: '#2D6A4F',
+  'On Track': '#228B22',
+  'Needs Focus': '#B97A1D',
+};
+
+function calculateGoalProgress(goal: Goal, summary: WeeklySummary) {
+  let currentValue = 0;
+  if (goal.type === 'WorkoutsPerWeek') {
+    currentValue = summary.completedThisWeek;
+  } else if (goal.type === 'MinutesPerWeek') {
+    currentValue = summary.totalMinutes;
+  }
+
+  const targetValue = goal.targetValue;
+  const ratio = targetValue > 0 ? currentValue / targetValue : 0;
+
+  if (goal.status === 'Completed') {
+    return {
+      currentValue,
+      targetValue,
+      ratio: Math.max(ratio, 1),
+      label: 'Completed' as const,
+      color: GOAL_STATUS_COLORS.Completed,
+    };
+  }
+
+  let label: 'Achieved' | 'On Track' | 'Needs Focus';
+  if (ratio >= 1) {
+    label = 'Achieved';
+  } else if (ratio >= 0.6) {
+    label = 'On Track';
+  } else {
+    label = 'Needs Focus';
+  }
+
+  return {
+    currentValue,
+    targetValue,
+    ratio,
+    label,
+    color: GOAL_STATUS_COLORS[label],
+  };
+}
+
 function formatDate(isoDate: string) {
   const date = new Date(isoDate);
   return date.toLocaleDateString(undefined, {
@@ -88,13 +189,14 @@ function formatDate(isoDate: string) {
 
 export default function WorkoutTrackerPage({ onBack }: WorkoutTrackerPageProps) {
   const [workouts, setWorkouts] = useState<WorkoutEntry[]>(INITIAL_WORKOUTS);
+  const [goals, setGoals] = useState<Goal[]>(INITIAL_GOALS);
   const [name, setName] = useState('');
   const [duration, setDuration] = useState('');
   const [notes, setNotes] = useState('');
   const [selectedIntensity, setSelectedIntensity] = useState<WorkoutEntry['intensity']>('Medium');
   const [selectedFocus, setSelectedFocus] = useState<WorkoutEntry['focus']>('Strength');
 
-  const { completedThisWeek, totalMinutes, currentStreak } = useMemo(() => {
+  const weeklySummary = useMemo<WeeklySummary>(() => {
     const now = new Date();
     const startOfWeek = new Date(now);
     const dayIndex = now.getDay();
@@ -132,6 +234,115 @@ export default function WorkoutTrackerPage({ onBack }: WorkoutTrackerPageProps) 
       currentStreak: streak,
     };
   }, [workouts]);
+
+  const { completedThisWeek, totalMinutes, currentStreak } = weeklySummary;
+  const [isAddingGoal, setIsAddingGoal] = useState(false);
+  const [goalTitle, setGoalTitle] = useState('');
+  const [goalTargetValue, setGoalTargetValue] = useState('');
+  const [goalType, setGoalType] = useState<GoalType>('WorkoutsPerWeek');
+  const [goalNotes, setGoalNotes] = useState('');
+
+  const resetGoalForm = () => {
+    setGoalTitle('');
+    setGoalTargetValue('');
+    setGoalType('WorkoutsPerWeek');
+    setGoalNotes('');
+  };
+
+  const handleToggleGoalStatus = (goalId: string) => {
+    setGoals((prev) =>
+      prev.map((goal) =>
+        goal.id === goalId
+          ? {
+              ...goal,
+              status: goal.status === 'Completed' ? 'Active' : 'Completed',
+            }
+          : goal,
+      ),
+    );
+  };
+
+  const handleCancelGoal = () => {
+    resetGoalForm();
+    setIsAddingGoal(false);
+  };
+
+  const handleSaveGoal = () => {
+    if (!goalTitle.trim()) {
+      Alert.alert('Missing title', 'Add a short name so you remember what you are chasing.');
+      return;
+    }
+
+    if (!goalTargetValue.trim()) {
+      Alert.alert('Missing target', 'Specify the target value to measure progress against.');
+      return;
+    }
+
+    const parsedTarget = Number.parseInt(goalTargetValue, 10);
+
+    if (Number.isNaN(parsedTarget) || parsedTarget <= 0) {
+      Alert.alert('Invalid target', 'Target should be a positive number.');
+      return;
+    }
+
+    const newGoal: Goal = {
+      id: `goal-${Date.now()}`,
+      title: goalTitle.trim(),
+      type: goalType,
+      targetValue: parsedTarget,
+      status: 'Active',
+      startDate: new Date().toISOString(),
+      notes: goalNotes.trim() || undefined,
+    };
+
+    setGoals((prev) => [newGoal, ...prev]);
+    resetGoalForm();
+    setIsAddingGoal(false);
+  };
+
+  const renderGoalCard = (goal: Goal) => {
+    const progress = calculateGoalProgress(goal, weeklySummary);
+    const goalConfig = GOAL_TYPE_CONFIG[goal.type];
+
+    return (
+      <View key={goal.id} style={styles.goalCard}>
+        <View style={styles.goalCardHeader}>
+          <View>
+            <Text style={styles.goalTitle}>{goal.title}</Text>
+            <Text style={styles.goalMeta}>
+              {goalConfig.label} • Target {goal.targetValue} {goalConfig.unit}
+            </Text>
+          </View>
+          <View style={[styles.goalStatusPill, { backgroundColor: progress.color }]}>
+            <Text style={styles.goalStatusText}>{progress.label}</Text>
+          </View>
+        </View>
+        {goal.notes ? <Text style={styles.goalNotes}>{goal.notes}</Text> : null}
+        <View style={styles.goalProgressBarBackground}>
+          <View
+            style={[
+              styles.goalProgressBarFill,
+              {
+                width: `${Math.min(progress.ratio, 1) * 100}%`,
+                backgroundColor: progress.color,
+              },
+            ]}
+          />
+        </View>
+        <View style={styles.goalProgressRow}>
+          <Text style={styles.goalProgressText}>
+            {Math.min(progress.currentValue, goal.targetValue)} / {goal.targetValue} {goalConfig.unit}
+          </Text>
+          <TouchableOpacity style={styles.goalActionButton} onPress={() => handleToggleGoalStatus(goal.id)}>
+            <Text style={styles.goalActionButtonText}>
+              {goal.status === 'Completed' ? 'Mark Active' : 'Mark Completed'}
+            </Text>
+          </TouchableOpacity>
+        </View>
+        <Text style={styles.goalDate}>Started {formatDate(goal.startDate)}</Text>
+      </View>
+    );
+  };
 
   const sortedWorkouts = useMemo(
     () =>
@@ -230,6 +441,100 @@ export default function WorkoutTrackerPage({ onBack }: WorkoutTrackerPageProps) 
             <Text style={styles.backText}>← Back</Text>
           </TouchableOpacity>
           <Text style={styles.title}>Workout Tracker</Text>
+        </View>
+
+        <View style={styles.goalsSection}>
+          <View style={styles.goalsHeader}>
+            <View>
+              <Text style={styles.sectionTitle}>Goal Management</Text>
+              <Text style={styles.goalsSubtitle}>Stay consistent by tracking your weekly targets.</Text>
+            </View>
+            <TouchableOpacity
+              style={styles.newGoalButton}
+              onPress={() => setIsAddingGoal((prev) => !prev)}
+            >
+              <Text style={styles.newGoalButtonText}>{isAddingGoal ? 'Close' : 'New Goal'}</Text>
+            </TouchableOpacity>
+          </View>
+
+          {isAddingGoal ? (
+            <View style={styles.goalForm}>
+              <Text style={styles.inputLabel}>Goal title</Text>
+              <TextInput
+                value={goalTitle}
+                onChangeText={setGoalTitle}
+                placeholder="e.g. 4 workouts this week"
+                placeholderTextColor="#A0A0A0"
+                style={styles.textInput}
+              />
+
+              <Text style={[styles.inputLabel, styles.goalFormLabel]}>Goal type</Text>
+              <View style={styles.pillRow}>
+                {(Object.keys(GOAL_TYPE_CONFIG) as GoalType[]).map((option) => (
+                  <TouchableOpacity
+                    key={option}
+                    style={[
+                      styles.pill,
+                      goalType === option ? styles.pillActive : null,
+                    ]}
+                    onPress={() => setGoalType(option)}
+                  >
+                    <Text
+                      style={[
+                        styles.pillText,
+                        goalType === option ? styles.pillTextActive : null,
+                      ]}
+                    >
+                      {GOAL_TYPE_CONFIG[option].label}
+                    </Text>
+                  </TouchableOpacity>
+                ))}
+              </View>
+
+              <Text style={[styles.inputLabel, styles.goalFormLabel]}>Target value</Text>
+              <TextInput
+                value={goalTargetValue}
+                onChangeText={setGoalTargetValue}
+                placeholder={GOAL_TYPE_CONFIG[goalType].unit === 'workouts' ? '3' : '150'}
+                placeholderTextColor="#A0A0A0"
+                keyboardType="numeric"
+                style={styles.textInput}
+              />
+
+              <Text style={[styles.inputLabel, styles.goalFormLabel]}>Notes (optional)</Text>
+              <TextInput
+                value={goalNotes}
+                onChangeText={setGoalNotes}
+                placeholder="Add any context, focus, or milestones"
+                placeholderTextColor="#A0A0A0"
+                style={[styles.textInput, styles.multilineInput]}
+                multiline
+                numberOfLines={3}
+              />
+
+              <View style={styles.goalFormActions}>
+                <TouchableOpacity style={[styles.goalFormButton, styles.goalFormCancel]} onPress={handleCancelGoal}>
+                  <Text style={styles.goalFormCancelText}>Cancel</Text>
+                </TouchableOpacity>
+                <TouchableOpacity style={[styles.goalFormButton, styles.goalFormSubmit]} onPress={handleSaveGoal}>
+                  <Text style={styles.goalFormSubmitText}>Save Goal</Text>
+                </TouchableOpacity>
+              </View>
+            </View>
+          ) : null}
+
+          <View style={styles.goalList}>
+            {goals.length ? (
+              goals.map(renderGoalCard)
+            ) : (
+              <View style={styles.goalEmptyState}>
+                <Text style={styles.goalEmptyTitle}>No goals yet</Text>
+                <Text style={styles.goalEmptySubtitle}>
+                  Create your first goal to stay accountable to your training targets.
+                </Text>
+              </View>
+            )}
+          </View>
         </View>
 
         <View style={styles.summaryRow}>
@@ -392,6 +697,194 @@ const styles = StyleSheet.create({
     fontSize: 32,
     fontWeight: 'bold',
     color: '#228B22',
+  },
+  goalsSection: {
+    marginTop: 24,
+    marginHorizontal: 24,
+    backgroundColor: '#FFFFFF',
+    borderRadius: 20,
+    padding: 20,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 3 },
+    shadowOpacity: 0.06,
+    shadowRadius: 6,
+    elevation: 3,
+  },
+  goalsHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'flex-start',
+    marginBottom: 16,
+  },
+  goalsSubtitle: {
+    marginTop: 4,
+    fontSize: 14,
+    color: '#5F875F',
+  },
+  newGoalButton: {
+    backgroundColor: '#228B22',
+    borderRadius: 999,
+    paddingVertical: 10,
+    paddingHorizontal: 18,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.12,
+    shadowRadius: 3,
+    elevation: 2,
+  },
+  newGoalButtonText: {
+    color: '#FFFFFF',
+    fontSize: 14,
+    fontWeight: '600',
+  },
+  goalForm: {
+    marginBottom: 20,
+    padding: 16,
+    borderRadius: 16,
+    backgroundColor: '#F8FFF8',
+    borderWidth: 1,
+    borderColor: '#D6E8D6',
+    gap: 12,
+  },
+  goalFormLabel: {
+    marginTop: 4,
+  },
+  goalFormActions: {
+    flexDirection: 'row',
+    justifyContent: 'flex-end',
+    gap: 12,
+  },
+  goalFormButton: {
+    borderRadius: 12,
+    paddingVertical: 12,
+    paddingHorizontal: 20,
+    alignItems: 'center',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.08,
+    shadowRadius: 3,
+    elevation: 2,
+  },
+  goalFormCancel: {
+    backgroundColor: '#FFFFFF',
+    borderWidth: 1,
+    borderColor: '#D6E8D6',
+  },
+  goalFormSubmit: {
+    backgroundColor: '#228B22',
+  },
+  goalFormCancelText: {
+    color: '#4A774A',
+    fontWeight: '600',
+  },
+  goalFormSubmitText: {
+    color: '#FFFFFF',
+    fontWeight: '600',
+  },
+  goalList: {
+    gap: 16,
+  },
+  goalCard: {
+    backgroundColor: '#FFFFFF',
+    borderRadius: 18,
+    padding: 20,
+    borderWidth: 1,
+    borderColor: '#E2F0E2',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 3 },
+    shadowOpacity: 0.06,
+    shadowRadius: 5,
+    elevation: 3,
+  },
+  goalCardHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'flex-start',
+    marginBottom: 12,
+  },
+  goalTitle: {
+    fontSize: 18,
+    fontWeight: '700',
+    color: '#2F4F2F',
+  },
+  goalMeta: {
+    marginTop: 6,
+    fontSize: 14,
+    color: '#708070',
+  },
+  goalStatusPill: {
+    borderRadius: 999,
+    paddingVertical: 8,
+    paddingHorizontal: 16,
+  },
+  goalStatusText: {
+    color: '#FFFFFF',
+    fontWeight: '700',
+    fontSize: 13,
+  },
+  goalNotes: {
+    fontSize: 14,
+    color: '#4F5C4F',
+    lineHeight: 20,
+    marginBottom: 12,
+  },
+  goalProgressBarBackground: {
+    height: 8,
+    borderRadius: 999,
+    backgroundColor: '#E6F0E6',
+    overflow: 'hidden',
+    marginBottom: 12,
+  },
+  goalProgressBarFill: {
+    height: '100%',
+  },
+  goalProgressRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+  },
+  goalProgressText: {
+    fontSize: 14,
+    color: '#4F5C4F',
+    fontWeight: '600',
+  },
+  goalActionButton: {
+    borderRadius: 999,
+    paddingVertical: 8,
+    paddingHorizontal: 16,
+    borderWidth: 1,
+    borderColor: '#D6E8D6',
+    backgroundColor: '#FFFFFF',
+  },
+  goalActionButtonText: {
+    color: '#228B22',
+    fontWeight: '600',
+    fontSize: 13,
+  },
+  goalDate: {
+    marginTop: 12,
+    fontSize: 12,
+    color: '#708070',
+  },
+  goalEmptyState: {
+    paddingVertical: 24,
+    alignItems: 'center',
+    backgroundColor: '#F8FFF8',
+    borderRadius: 16,
+    borderWidth: 1,
+    borderColor: '#D6E8D6',
+  },
+  goalEmptyTitle: {
+    fontSize: 16,
+    fontWeight: '700',
+    color: '#2F4F2F',
+  },
+  goalEmptySubtitle: {
+    marginTop: 8,
+    fontSize: 14,
+    color: '#708070',
+    textAlign: 'center',
+    paddingHorizontal: 24,
   },
   summaryRow: {
     flexDirection: 'row',
