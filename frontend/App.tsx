@@ -99,7 +99,8 @@ export default function App() {
   }
 
   if (currentPage === 'macro') {
-    return <MacroTracker onBackToHome={showDashboard} />;
+    const goBackTo = currentUser ? showDashboard : showHomePage;
+    return <MacroTracker onBackToHome={goBackTo} />;
   }
 
   if (currentPage === 'workout') {
