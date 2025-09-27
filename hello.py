@@ -1,0 +1,1 @@
+print("Hello, AI Fitness Tracker setup complete!")
