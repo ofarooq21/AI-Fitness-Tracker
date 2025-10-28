@@ -5,9 +5,10 @@ import { AuthService, User } from '../services/authService';
 interface DashboardProps {
   onLogout: () => void;
   onShowMacroTracker: () => void;
+  onShowWorkoutTracker: () => void;
 }
 
-export default function Dashboard({ onLogout, onShowMacroTracker }: DashboardProps) {
+export default function Dashboard({ onLogout, onShowMacroTracker, onShowWorkoutTracker }: DashboardProps) {
   const [user, setUser] = useState<User | null>(null);
   const [userCount, setUserCount] = useState(0);
 
@@ -98,7 +99,7 @@ export default function Dashboard({ onLogout, onShowMacroTracker }: DashboardPro
             <Text style={styles.actionArrow}>→</Text>
           </TouchableOpacity>
 
-          <TouchableOpacity style={styles.actionButton}>
+          <TouchableOpacity style={styles.actionButton} onPress={onShowWorkoutTracker}>
             <Text style={styles.actionIcon}>🏋️</Text>
             <View style={styles.actionContent}>
               <Text style={styles.actionTitle}>Workout Tracker</Text>
