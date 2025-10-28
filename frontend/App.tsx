@@ -141,10 +141,10 @@ export default function App() {
                 <Text style={styles.featureIcon}>📱</Text>
                 <Text style={styles.featureText}>Macro Tracker</Text>
               </TouchableOpacity>
-              <View style={styles.featureItem}>
+              <TouchableOpacity style={styles.featureItem} onPress={showWorkoutPage}>
                 <Text style={styles.featureIcon}>🏋️</Text>
                 <Text style={styles.featureText}>Workout Analysis</Text>
-              </View>
+              </TouchableOpacity>
               <View style={styles.featureItem}>
                 <Text style={styles.featureIcon}>🎯</Text>
                 <Text style={styles.featureText}>Goal Management</Text>
