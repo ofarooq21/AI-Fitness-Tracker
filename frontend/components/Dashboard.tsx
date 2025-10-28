@@ -19,9 +19,9 @@ export default function Dashboard({ onLogout, onShowMacroTracker, onShowWorkoutT
   const loadUserData = async () => {
     try {
       const currentUser = await AuthService.getCurrentUser();
-      const count = await AuthService.getUserCount();
       setUser(currentUser);
-      setUserCount(count);
+      // For now, we'll set a default user count since getUserCount doesn't exist
+      setUserCount(1);
     } catch (error) {
       console.error('Error loading user data:', error);
     }

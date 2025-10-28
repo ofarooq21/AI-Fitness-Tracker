@@ -14,81 +14,73 @@ export interface UserAccount {
   createdAt: string;
 }
 
-const USERS_KEY = 'celery_users';
+const API_BASE_URL = 'http://localhost:8000';
+const TOKEN_KEY = 'celery_auth_token';
 const CURRENT_USER_KEY = 'celery_current_user';
 
 export class AuthService {
-  // Get all stored users
-  static async getUsers(): Promise<UserAccount[]> {
+  // Register a new user
+  static async register(email: string, password: string, name: string): Promise<User> {
     try {
-      const usersJson = await AsyncStorage.getItem(USERS_KEY);
-      return usersJson ? JSON.parse(usersJson) : [];
-    } catch (error) {
-      console.error('Error getting users:', error);
-      return [];
-    }
-  }
+      const response = await fetch(`${API_BASE_URL}/users/register`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          email: email.toLowerCase(),
+          password,
+          name,
+        }),
+      });
 
-  // Save users to storage
-  static async saveUsers(users: UserAccount[]): Promise<void> {
-    try {
-      await AsyncStorage.setItem(USERS_KEY, JSON.stringify(users));
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.detail || 'Registration failed');
+      }
+
+      const userData = await response.json();
+      
+      // Store user data locally
+      await this.setCurrentUser(userData);
+      
+      return userData;
     } catch (error) {
-      console.error('Error saving users:', error);
+      console.error('Registration error:', error);
       throw error;
     }
   }
 
-  // Register a new user
-  static async register(email: string, password: string, name: string): Promise<User> {
-    const users = await this.getUsers();
-    
-    // Check if user already exists
-    const existingUser = users.find(user => user.email.toLowerCase() === email.toLowerCase());
-    if (existingUser) {
-      throw new Error('User with this email already exists');
-    }
-
-    // Create new user
-    const newUser: UserAccount = {
-      email: email.toLowerCase(),
-      password, // In a real app, this would be hashed
-      name,
-      createdAt: new Date().toISOString()
-    };
-
-    users.push(newUser);
-    await this.saveUsers(users);
-
-    // Return user without password
-    return {
-      id: newUser.email, // Using email as ID for simplicity
-      email: newUser.email,
-      name: newUser.name,
-      createdAt: newUser.createdAt
-    };
-  }
-
   // Login user
   static async login(email: string, password: string): Promise<User> {
-    const users = await this.getUsers();
-    
-    const user = users.find(u => 
-      u.email.toLowerCase() === email.toLowerCase() && 
-      u.password === password
-    );
+    try {
+      const response = await fetch(`${API_BASE_URL}/users/login`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          email: email.toLowerCase(),
+          password,
+        }),
+      });
 
-    if (!user) {
-      throw new Error('Invalid email or password');
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.detail || 'Login failed');
+      }
+
+      const loginData = await response.json();
+      
+      // Store token and user data
+      await AsyncStorage.setItem(TOKEN_KEY, loginData.access_token);
+      await this.setCurrentUser(loginData.user);
+      
+      return loginData.user;
+    } catch (error) {
+      console.error('Login error:', error);
+      throw error;
     }
-
-    // Return user without password
-    return {
-      id: user.email,
-      email: user.email,
-      name: user.name,
-      createdAt: user.createdAt
-    };
   }
 
   // Get current logged in user
@@ -116,20 +108,52 @@ export class AuthService {
     }
   }
 
+  // Get auth token
+  static async getAuthToken(): Promise<string | null> {
+    try {
+      return await AsyncStorage.getItem(TOKEN_KEY);
+    } catch (error) {
+      console.error('Error getting auth token:', error);
+      return null;
+    }
+  }
+
   // Logout user
   static async logout(): Promise<void> {
+    await AsyncStorage.removeItem(TOKEN_KEY);
     await this.setCurrentUser(null);
   }
 
   // Check if user is logged in
   static async isLoggedIn(): Promise<boolean> {
     const user = await this.getCurrentUser();
-    return user !== null;
+    const token = await this.getAuthToken();
+    return user !== null && token !== null;
   }
 
-  // Get user count (for demo purposes)
-  static async getUserCount(): Promise<number> {
-    const users = await this.getUsers();
-    return users.length;
+  // Make authenticated API request
+  static async makeAuthenticatedRequest(endpoint: string, options: RequestInit = {}): Promise<Response> {
+    const token = await this.getAuthToken();
+    
+    if (!token) {
+      throw new Error('No authentication token found');
+    }
+
+    const response = await fetch(`${API_BASE_URL}${endpoint}`, {
+      ...options,
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${token}`,
+        ...options.headers,
+      },
+    });
+
+    if (response.status === 401) {
+      // Token expired, logout user
+      await this.logout();
+      throw new Error('Session expired. Please login again.');
+    }
+
+    return response;
   }
 }
