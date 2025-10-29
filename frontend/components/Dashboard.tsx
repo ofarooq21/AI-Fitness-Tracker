@@ -6,9 +6,10 @@ interface DashboardProps {
   onLogout: () => void;
   onShowMacroTracker: () => void;
   onShowWorkoutTracker: () => void;
+  onShowGoals: () => void;
 }
 
-export default function Dashboard({ onLogout, onShowMacroTracker, onShowWorkoutTracker }: DashboardProps) {
+export default function Dashboard({ onLogout, onShowMacroTracker, onShowWorkoutTracker, onShowGoals }: DashboardProps) {
   const [user, setUser] = useState<User | null>(null);
   const [userCount, setUserCount] = useState(0);
 
@@ -108,7 +109,7 @@ export default function Dashboard({ onLogout, onShowMacroTracker, onShowWorkoutT
             <Text style={styles.actionArrow}>→</Text>
           </TouchableOpacity>
 
-          <TouchableOpacity style={styles.actionButton}>
+          <TouchableOpacity style={styles.actionButton} onPress={onShowGoals}>
             <Text style={styles.actionIcon}>🎯</Text>
             <View style={styles.actionContent}>
               <Text style={styles.actionTitle}>Goals</Text>
