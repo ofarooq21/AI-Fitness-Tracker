@@ -7,14 +7,17 @@ import RegisterPage from './components/RegisterPage';
 import Dashboard from './components/Dashboard';
 import MacroTracker from './components/MacroTracker';
 import WorkoutTracker from './components/WorkoutTracker';
+import GoalForm from './components/GoalForm';
+import GoalsList from './components/GoalsList';
 import { AuthService, User } from './services/authService';
 
 export default function App() {
-  type Page = 'home' | 'login' | 'register' | 'dashboard' | 'macro' | 'workout';
+  type Page = 'home' | 'login' | 'register' | 'dashboard' | 'macro' | 'workout' | 'goalsForm' | 'goalsList';
 
   const [currentPage, setCurrentPage] = useState<Page>('home');
   const [currentUser, setCurrentUser] = useState<User | null>(null);
   const [isLoading, setIsLoading] = useState(true);
+  const [goalsSuccessMessage, setGoalsSuccessMessage] = useState<string | null>(null);
 
   useEffect(() => {
     checkAuthStatus();
@@ -41,6 +44,8 @@ export default function App() {
   const showDashboard = () => setCurrentPage('dashboard');
   const showMacroTracker = () => setCurrentPage('macro');
   const showWorkoutPage = () => setCurrentPage('workout');
+  const showGoalsForm = () => setCurrentPage('goalsForm');
+  const showGoalsList = () => setCurrentPage('goalsList');
 
   // Auth handlers
   const handleLoginSuccess = (user: User) => {
@@ -95,6 +100,7 @@ export default function App() {
         onLogout={handleLogout}
         onShowMacroTracker={showMacroTracker}
         onShowWorkoutTracker={showWorkoutPage}
+        onShowGoals={showGoalsList}
       />
     );
   }
@@ -107,6 +113,31 @@ export default function App() {
   if (currentPage === 'workout') {
     const goBackTo = currentUser ? showDashboard : showHomePage;
     return <WorkoutTracker onBackToHome={goBackTo} />;
+  }
+
+  if (currentPage === 'goalsForm') {
+    const goBackTo = currentUser ? showDashboard : showHomePage;
+    return (
+      <GoalForm
+        onBack={goBackTo}
+        onCreated={(msg?: string) => {
+          setGoalsSuccessMessage(msg || null);
+          showGoalsList();
+        }}
+      />
+    );
+  }
+
+  if (currentPage === 'goalsList') {
+    const goBackTo = currentUser ? showDashboard : showHomePage;
+    return (
+      <GoalsList
+        onBack={goBackTo}
+        onCreateNew={showGoalsForm}
+        successMessage={goalsSuccessMessage}
+        clearMessage={() => setGoalsSuccessMessage(null)}
+      />
+    );
   }
 
   // Home / Landing
