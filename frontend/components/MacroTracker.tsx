@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import { 
   StyleSheet, 
   Text, 
@@ -10,6 +10,18 @@ import {
   Alert,
   Modal
 } from 'react-native';
+import AsyncStorage from '@react-native-async-storage/async-storage';
+import { AuthService } from '../services/authService';
+import { 
+  getTotalCalories as utilsTotalCalories,
+  getTotalProtein as utilsTotalProtein,
+  getTotalFat as utilsTotalFat,
+  getTotalCarbs as utilsTotalCarbs,
+  getGoalProgress as utilsGoalProgress,
+  getDaysRemaining as utilsDaysRemaining,
+  validateMealDraft,
+  formatDisplayDate,
+} from '../utils/macroUtils';
 
 interface Meal {
   id: string;
@@ -37,11 +49,16 @@ interface MacroTrackerProps {
 }
 
 export default function MacroTracker({ onBackToHome }: MacroTrackerProps) {
+  const [userId, setUserId] = useState<string>('guest');
   const [selectedDate, setSelectedDate] = useState(new Date().toISOString().split('T')[0]);
+  useEffect(() => {
+    AuthService.getCurrentUser().then(u => setUserId(u?.id || 'guest')).catch(() => setUserId('guest'));
+  }, []);
   const [meals, setMeals] = useState<Meal[]>([]);
   const [showAddMeal, setShowAddMeal] = useState(false);
   const [showGoalModal, setShowGoalModal] = useState(false);
   const [currentGoal, setCurrentGoal] = useState<MacroGoal | null>(null);
+  const [editingMealId, setEditingMealId] = useState<string | null>(null);
   const [newMeal, setNewMeal] = useState({
     name: '',
     calories: '',
@@ -58,8 +75,9 @@ export default function MacroTracker({ onBackToHome }: MacroTrackerProps) {
   });
 
   const addMeal = () => {
-    if (!newMeal.name || !newMeal.calories || !newMeal.protein || !newMeal.fat || !newMeal.carbs) {
-      Alert.alert('Error', 'Please fill in all fields');
+    const errors = validateMealDraft(newMeal as any);
+    if (errors.length) {
+      Alert.alert('Error', errors[0]);
       return;
     }
 
@@ -74,6 +92,69 @@ export default function MacroTracker({ onBackToHome }: MacroTrackerProps) {
     };
 
     setMeals([...meals, meal]);
+    setNewMeal({ name: '', calories: '', protein: '', fat: '', carbs: '' });
+    setShowAddMeal(false);
+  };
+
+  // Persistence per selected date
+  const STORAGE_MEALS_KEY = (date: string) => `macro_meals_${userId}_${date}`;
+  const STORAGE_GOAL_KEY = (date: string) => `macro_goal_${userId}_${date}`;
+
+  useEffect(() => {
+    const load = async () => {
+      try {
+        const [mealsJson, goalJson] = await Promise.all([
+          AsyncStorage.getItem(STORAGE_MEALS_KEY(selectedDate)),
+          AsyncStorage.getItem(STORAGE_GOAL_KEY(selectedDate)),
+        ]);
+        setMeals(mealsJson ? JSON.parse(mealsJson) : []);
+        setCurrentGoal(goalJson ? JSON.parse(goalJson) : null);
+      } catch (e) {
+        // ignore
+      }
+    };
+    load();
+  }, [selectedDate]);
+
+  useEffect(() => {
+    AsyncStorage.setItem(STORAGE_MEALS_KEY(selectedDate), JSON.stringify(meals)).catch(() => {});
+  }, [meals, selectedDate]);
+
+  useEffect(() => {
+    AsyncStorage.setItem(STORAGE_GOAL_KEY(selectedDate), JSON.stringify(currentGoal)).catch(() => {});
+  }, [currentGoal, selectedDate]);
+
+  const startEditMeal = (id: string) => {
+    const m = meals.find(x => x.id === id);
+    if (!m) return;
+    setEditingMealId(id);
+    setNewMeal({
+      name: m.name,
+      calories: String(m.calories),
+      protein: String(m.protein),
+      fat: String(m.fat),
+      carbs: String(m.carbs),
+    });
+    setShowAddMeal(true);
+  };
+
+  const saveEditMeal = () => {
+    const errors = validateMealDraft(newMeal as any);
+    if (errors.length) {
+      Alert.alert('Error', errors[0]);
+      return;
+    }
+    if (!editingMealId) return;
+    const updated = meals.map(m => m.id === editingMealId ? {
+      ...m,
+      name: newMeal.name,
+      calories: parseInt(newMeal.calories),
+      protein: parseInt(newMeal.protein),
+      fat: parseInt(newMeal.fat),
+      carbs: parseInt(newMeal.carbs),
+    } : m);
+    setMeals(updated);
+    setEditingMealId(null);
     setNewMeal({ name: '', calories: '', protein: '', fat: '', carbs: '' });
     setShowAddMeal(false);
   };
@@ -155,29 +236,10 @@ export default function MacroTracker({ onBackToHome }: MacroTrackerProps) {
     );
   };
 
-  const getGoalProgress = (current: number, target: number) => {
-    if (target === 0) return 0;
-    return Math.min((current / target) * 100, 100);
-  };
+  const getGoalProgress = (current: number, target: number) => utilsGoalProgress(current, target);
+  const getDaysRemaining = () => utilsDaysRemaining(currentGoal as any);
 
-  const getDaysRemaining = () => {
-    if (!currentGoal) return 0;
-    const today = new Date();
-    const endDate = new Date(currentGoal.endDate);
-    const diffTime = endDate.getTime() - today.getTime();
-    const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
-    return Math.max(0, diffDays);
-  };
-
-  const formatDate = (dateString: string) => {
-    const date = new Date(dateString);
-    return date.toLocaleDateString('en-US', { 
-      weekday: 'long', 
-      year: 'numeric', 
-      month: 'long', 
-      day: 'numeric' 
-    });
-  };
+  const formatDate = (dateString: string) => formatDisplayDate(dateString);
 
   return (
     <SafeAreaView style={styles.container}>
@@ -186,7 +248,7 @@ export default function MacroTracker({ onBackToHome }: MacroTrackerProps) {
         <TouchableOpacity onPress={onBackToHome} style={styles.backButton}>
           <Text style={styles.backButtonText}>← Back</Text>
         </TouchableOpacity>
-        <Text style={styles.logo}>🥬 Macro Tracker</Text>
+        <Text style={styles.logo}>🥗 Macro Tracker</Text>
       </View>
 
       <ScrollView style={styles.content}>
@@ -212,6 +274,17 @@ export default function MacroTracker({ onBackToHome }: MacroTrackerProps) {
                 onPress={() => setShowGoalModal(true)}
               >
                 <Text style={styles.goalButtonText}>🎯 Set Goal</Text>
+              </TouchableOpacity>
+              <TouchableOpacity 
+                style={styles.clearDayButton}
+                onPress={() => {
+                  Alert.alert('Clear Day', 'Remove all meals for this day?', [
+                    { text: 'Cancel', style: 'cancel' },
+                    { text: 'Clear', style: 'destructive', onPress: () => setMeals([]) },
+                  ]);
+                }}
+              >
+                <Text style={styles.clearDayButtonText}>Clear Day</Text>
               </TouchableOpacity>
               {currentGoal && (
                 <TouchableOpacity 
@@ -248,24 +321,24 @@ export default function MacroTracker({ onBackToHome }: MacroTrackerProps) {
               {currentGoal && (
                 <>
                   <View style={styles.progressBar}>
-                    <View style={[styles.progressFill, { width: `${getGoalProgress(getTotalCalories(), currentGoal.calories)}%` }]} />
+                    <View style={[styles.progressFill, { width: `${getGoalProgress(utilsTotalCalories(meals), currentGoal.calories)}%` }]} />
                   </View>
                   <Text style={styles.progressText}>
-                    {getGoalProgress(getTotalCalories(), currentGoal.calories).toFixed(0)}% of {currentGoal.calories}
+                    {getGoalProgress(utilsTotalCalories(meals), currentGoal.calories).toFixed(0)}% of {currentGoal.calories}
                   </Text>
                 </>
               )}
             </View>
             <View style={styles.totalItem}>
-              <Text style={styles.totalValue}>{getTotalProtein()}g</Text>
+              <Text style={styles.totalValue}>{utilsTotalProtein(meals)}g</Text>
               <Text style={styles.totalLabel}>Protein</Text>
               {currentGoal && (
                 <>
                   <View style={styles.progressBar}>
-                    <View style={[styles.progressFill, { width: `${getGoalProgress(getTotalProtein(), currentGoal.protein)}%` }]} />
+                    <View style={[styles.progressFill, { width: `${getGoalProgress(utilsTotalProtein(meals), currentGoal.protein)}%` }]} />
                   </View>
                   <Text style={styles.progressText}>
-                    {getGoalProgress(getTotalProtein(), currentGoal.protein).toFixed(0)}% of {currentGoal.protein}g
+                    {getGoalProgress(utilsTotalProtein(meals), currentGoal.protein).toFixed(0)}% of {currentGoal.protein}g
                   </Text>
                 </>
               )}
@@ -273,29 +346,29 @@ export default function MacroTracker({ onBackToHome }: MacroTrackerProps) {
           </View>
           <View style={styles.totalsContainer}>
             <View style={styles.totalItem}>
-              <Text style={styles.totalValue}>{getTotalFat()}g</Text>
+              <Text style={styles.totalValue}>{utilsTotalFat(meals)}g</Text>
               <Text style={styles.totalLabel}>Fat</Text>
               {currentGoal && (
                 <>
                   <View style={styles.progressBar}>
-                    <View style={[styles.progressFill, { width: `${getGoalProgress(getTotalFat(), currentGoal.fat)}%` }]} />
+                    <View style={[styles.progressFill, { width: `${getGoalProgress(utilsTotalFat(meals), currentGoal.fat)}%` }]} />
                   </View>
                   <Text style={styles.progressText}>
-                    {getGoalProgress(getTotalFat(), currentGoal.fat).toFixed(0)}% of {currentGoal.fat}g
+                    {getGoalProgress(utilsTotalFat(meals), currentGoal.fat).toFixed(0)}% of {currentGoal.fat}g
                   </Text>
                 </>
               )}
             </View>
             <View style={styles.totalItem}>
-              <Text style={styles.totalValue}>{getTotalCarbs()}g</Text>
+              <Text style={styles.totalValue}>{utilsTotalCarbs(meals)}g</Text>
               <Text style={styles.totalLabel}>Carbs</Text>
               {currentGoal && (
                 <>
                   <View style={styles.progressBar}>
-                    <View style={[styles.progressFill, { width: `${getGoalProgress(getTotalCarbs(), currentGoal.carbs)}%` }]} />
+                    <View style={[styles.progressFill, { width: `${getGoalProgress(utilsTotalCarbs(meals), currentGoal.carbs)}%` }]} />
                   </View>
                   <Text style={styles.progressText}>
-                    {getGoalProgress(getTotalCarbs(), currentGoal.carbs).toFixed(0)}% of {currentGoal.carbs}g
+                    {getGoalProgress(utilsTotalCarbs(meals), currentGoal.carbs).toFixed(0)}% of {currentGoal.carbs}g
                   </Text>
                 </>
               )}
@@ -333,6 +406,12 @@ export default function MacroTracker({ onBackToHome }: MacroTrackerProps) {
                   <Text style={styles.macroText}>{meal.carbs}g carbs</Text>
                 </View>
                 <TouchableOpacity 
+                  style={styles.editButton}
+                  onPress={() => startEditMeal(meal.id)}
+                >
+                  <Text style={styles.editButtonText}>✎</Text>
+                </TouchableOpacity>
+                <TouchableOpacity 
                   style={styles.deleteButton}
                   onPress={() => deleteMeal(meal.id)}
                 >
@@ -353,7 +432,7 @@ export default function MacroTracker({ onBackToHome }: MacroTrackerProps) {
       >
         <View style={styles.modalOverlay}>
           <View style={styles.modalContent}>
-            <Text style={styles.modalTitle}>Add New Meal</Text>
+            <Text style={styles.modalTitle}>{editingMealId ? 'Edit Meal' : 'Add New Meal'}</Text>
             
             <View style={styles.inputContainer}>
               <Text style={styles.inputLabel}>Meal Name</Text>
@@ -418,9 +497,9 @@ export default function MacroTracker({ onBackToHome }: MacroTrackerProps) {
               </TouchableOpacity>
               <TouchableOpacity 
                 style={styles.saveButton}
-                onPress={addMeal}
+                onPress={editingMealId ? saveEditMeal : addMeal}
               >
-                <Text style={styles.saveButtonText}>Add Meal</Text>
+                <Text style={styles.saveButtonText}>{editingMealId ? 'Save Changes' : 'Add Meal'}</Text>
               </TouchableOpacity>
             </View>
           </View>
@@ -525,20 +604,20 @@ const styles = StyleSheet.create({
     paddingHorizontal: 20,
     paddingTop: 20,
     paddingBottom: 10,
-    backgroundColor: '#F0FFF0',
+    backgroundColor: '#F2F6FF',
   },
   backButton: {
     marginRight: 20,
   },
   backButtonText: {
     fontSize: 16,
-    color: '#228B22',
+    color: '#1E3A8A',
     fontWeight: '500',
   },
   logo: {
     fontSize: 24,
     fontWeight: 'bold',
-    color: '#228B22',
+    color: '#1E3A8A',
   },
   content: {
     flex: 1,
@@ -551,11 +630,11 @@ const styles = StyleSheet.create({
   sectionTitle: {
     fontSize: 20,
     fontWeight: 'bold',
-    color: '#228B22',
+    color: '#1E3A8A',
     marginBottom: 12,
   },
   dateInput: {
-    backgroundColor: '#F8FFF8',
+    backgroundColor: '#F8FAFF',
     borderRadius: 12,
     paddingHorizontal: 16,
     paddingVertical: 12,
@@ -576,7 +655,7 @@ const styles = StyleSheet.create({
   totalsContainer: {
     flexDirection: 'row',
     justifyContent: 'space-around',
-    backgroundColor: '#F8FFF8',
+    backgroundColor: '#F8FAFF',
     borderRadius: 12,
     padding: 20,
     marginBottom: 8,
@@ -587,7 +666,7 @@ const styles = StyleSheet.create({
   totalValue: {
     fontSize: 24,
     fontWeight: 'bold',
-    color: '#228B22',
+    color: '#1E3A8A',
   },
   totalLabel: {
     fontSize: 14,
@@ -595,7 +674,7 @@ const styles = StyleSheet.create({
     marginTop: 4,
   },
   addMealButton: {
-    backgroundColor: '#228B22',
+    backgroundColor: '#2563EB',
     borderRadius: 12,
     paddingVertical: 16,
     alignItems: 'center',
@@ -623,7 +702,7 @@ const styles = StyleSheet.create({
     color: '#999999',
   },
   mealItem: {
-    backgroundColor: '#F8FFF8',
+    backgroundColor: '#F8FAFF',
     borderRadius: 12,
     padding: 16,
     marginBottom: 12,
@@ -649,7 +728,7 @@ const styles = StyleSheet.create({
   },
   macroText: {
     fontSize: 14,
-    color: '#228B22',
+    color: '#1E3A8A',
     fontWeight: '500',
   },
   deleteButton: {
@@ -659,6 +738,22 @@ const styles = StyleSheet.create({
     backgroundColor: '#FF6B6B',
     alignItems: 'center',
     justifyContent: 'center',
+  },
+  editButton: {
+    width: 30,
+    height: 30,
+    borderRadius: 15,
+    backgroundColor: '#DBEAFE',
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginRight: 8,
+    borderWidth: 1,
+    borderColor: '#2563EB',
+  },
+  editButtonText: {
+    color: '#1E3A8A',
+    fontSize: 14,
+    fontWeight: 'bold',
   },
   deleteButtonText: {
     color: '#FFFFFF',
@@ -681,7 +776,7 @@ const styles = StyleSheet.create({
   modalTitle: {
     fontSize: 20,
     fontWeight: 'bold',
-    color: '#228B22',
+    color: '#1E3A8A',
     textAlign: 'center',
     marginBottom: 20,
   },
@@ -691,11 +786,11 @@ const styles = StyleSheet.create({
   inputLabel: {
     fontSize: 14,
     fontWeight: '600',
-    color: '#228B22',
+    color: '#1E3A8A',
     marginBottom: 8,
   },
   input: {
-    backgroundColor: '#F8FFF8',
+    backgroundColor: '#F8FAFF',
     borderRadius: 12,
     paddingHorizontal: 16,
     paddingVertical: 12,
@@ -726,7 +821,7 @@ const styles = StyleSheet.create({
   },
   saveButton: {
     flex: 1,
-    backgroundColor: '#228B22',
+    backgroundColor: '#2563EB',
     borderRadius: 12,
     paddingVertical: 12,
     alignItems: 'center',
@@ -752,13 +847,26 @@ const styles = StyleSheet.create({
     gap: 8,
   },
   goalButton: {
-    backgroundColor: '#FF6B35',
+    backgroundColor: '#22C55E',
     borderRadius: 8,
     paddingHorizontal: 12,
     paddingVertical: 8,
   },
   goalButtonText: {
     color: '#FFFFFF',
+    fontSize: 14,
+    fontWeight: '600',
+  },
+  clearDayButton: {
+    backgroundColor: '#EAF2FF',
+    borderRadius: 8,
+    paddingHorizontal: 12,
+    paddingVertical: 8,
+    borderWidth: 1,
+    borderColor: '#2563EB',
+  },
+  clearDayButtonText: {
+    color: '#2563EB',
     fontSize: 14,
     fontWeight: '600',
   },
@@ -774,16 +882,16 @@ const styles = StyleSheet.create({
     fontWeight: '600',
   },
   goalInfo: {
-    backgroundColor: '#FFF8F0',
+    backgroundColor: '#EEF2FF',
     borderRadius: 12,
     padding: 16,
     borderLeftWidth: 4,
-    borderLeftColor: '#FF6B35',
+    borderLeftColor: '#2563EB',
   },
   goalDuration: {
     fontSize: 16,
     fontWeight: 'bold',
-    color: '#FF6B35',
+    color: '#1E3A8A',
     marginBottom: 4,
   },
   goalEndDate: {
@@ -806,7 +914,7 @@ const styles = StyleSheet.create({
   },
   progressFill: {
     height: '100%',
-    backgroundColor: '#228B22',
+    backgroundColor: '#2563EB',
     borderRadius: 2,
   },
   progressText: {

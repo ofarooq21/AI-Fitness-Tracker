@@ -10,6 +10,8 @@ import {
   Alert,
   Modal
 } from 'react-native';
+import AsyncStorage from '@react-native-async-storage/async-storage';
+import { AuthService } from '../services/authService';
 
 interface Exercise {
   id: string;
@@ -56,7 +58,8 @@ const EXERCISE_CATEGORIES = [
   { name: 'Cardio', exercises: ['Running', 'Cycling', 'Rowing', 'Swimming'] }
 ];
 
-export default function WorkoutTracker({ onBackToHome, userId }: WorkoutTrackerProps) {
+export default function WorkoutTracker({ onBackToHome }: WorkoutTrackerProps) {
+  const [userId, setUserId] = useState<string>('guest');
   const [currentWorkout, setCurrentWorkout] = useState<WorkoutSession | null>(null);
   const [workoutHistory, setWorkoutHistory] = useState<WorkoutSession[]>([]);
   const [showAddExercise, setShowAddExercise] = useState(false);
@@ -81,38 +84,19 @@ export default function WorkoutTracker({ onBackToHome, userId }: WorkoutTrackerP
     loadWorkoutHistory();
   }, []);
 
-  // Keep forecast user id in sync with prop changes
   useEffect(() => {
-    if (userId && userId !== forecastUserId) {
-      setForecastUserId(userId);
-    }
-  }, [userId]);
+    AuthService.getCurrentUser().then(u => setUserId(u?.id || 'guest')).catch(() => setUserId('guest'));
+  }, []);
 
-  const loadWorkoutHistory = () => {
-    // In a real app, this would load from backend
-    // For now, we'll use some sample data
-    const sampleWorkouts: WorkoutSession[] = [
-      {
-        id: '1',
-        name: 'Upper Body Strength',
-        date: new Date().toISOString().split('T')[0],
-        duration: 45,
-        totalSets: 12,
-        totalVolume: 2500,
-        exercises: [
-          {
-            id: '1',
-            exercise: { id: '1', name: 'Bench Press', category: 'Chest' },
-            sets: [
-              { id: '1', reps: 10, weight: 135, completed: true },
-              { id: '2', reps: 8, weight: 155, completed: true },
-              { id: '3', reps: 6, weight: 175, completed: true }
-            ]
-          }
-        ]
-      }
-    ];
-    setWorkoutHistory(sampleWorkouts);
+  const STORAGE_KEY = `workout_history_${userId}`;
+
+  const loadWorkoutHistory = async () => {
+    try {
+      const json = await AsyncStorage.getItem(STORAGE_KEY);
+      setWorkoutHistory(json ? JSON.parse(json) : []);
+    } catch (_) {
+      setWorkoutHistory([]);
+    }
   };
 
   const startNewWorkout = () => {
@@ -151,7 +135,9 @@ export default function WorkoutTracker({ onBackToHome, userId }: WorkoutTrackerP
       )
     };
 
-    setWorkoutHistory([updatedWorkout, ...workoutHistory]);
+    const newHistory = [updatedWorkout, ...workoutHistory];
+    setWorkoutHistory(newHistory);
+    AsyncStorage.setItem(STORAGE_KEY, JSON.stringify(newHistory)).catch(() => {});
     setCurrentWorkout(null);
     setStartTime(null);
     Alert.alert('Success', `Workout completed! Duration: ${duration} minutes`);
@@ -340,7 +326,7 @@ export default function WorkoutTracker({ onBackToHome, userId }: WorkoutTrackerP
         <Text style={styles.logo}>🏋️ Workout Tracker</Text>
       </View>
 
-      <ScrollView style={styles.content}>
+      <View style={[styles.content, styles.inner]}>
         {!currentWorkout ? (
           // Workout Selection/History View
           <View>
@@ -500,10 +486,10 @@ export default function WorkoutTracker({ onBackToHome, userId }: WorkoutTrackerP
             </TouchableOpacity>
           </View>
         )}
-      </ScrollView>
+      </View>
 
       {/* Bottom Summary Section */}
-      <View style={styles.summaryContainer}>
+      <View style={[styles.summaryContainer, styles.inner]}>
         <Text style={styles.sectionTitle}>This Week's Summary</Text>
         <View style={styles.summaryRow}>
           <View style={styles.summaryCard}>
@@ -635,7 +621,7 @@ export default function WorkoutTracker({ onBackToHome, userId }: WorkoutTrackerP
 
                 {forecastError ? <Text style={{ color: '#B00020', marginTop: 8 }}>{forecastError}</Text> : null}
 
-                <ScrollView style={{ maxHeight: 260, marginTop: 12 }}>
+                <ScrollView style={{ maxHeight: 260, marginTop: 12 }} showsVerticalScrollIndicator={false}>
                   {forecastData.length === 0 && !forecastLoading ? (
                     <Text style={{ color: '#666666' }}>No forecast yet. Create workouts and try again.</Text>
                   ) : (
@@ -705,7 +691,7 @@ export default function WorkoutTracker({ onBackToHome, userId }: WorkoutTrackerP
             {selectedCategory && (
               <View style={styles.exerciseContainer}>
                 <Text style={styles.inputLabel}>Exercise</Text>
-                <ScrollView style={styles.exerciseList}>
+                <ScrollView style={styles.exerciseList} showsVerticalScrollIndicator={false}>
                   {EXERCISE_CATEGORIES
                     .find(cat => cat.name === selectedCategory)
                     ?.exercises.map((exercise) => (
@@ -762,37 +748,42 @@ const styles = StyleSheet.create({
     paddingHorizontal: 20,
     paddingTop: 20,
     paddingBottom: 10,
-    backgroundColor: '#F0FFF0',
+    backgroundColor: '#F2F6FF',
   },
   backButton: {
     marginRight: 20,
   },
   backButtonText: {
     fontSize: 16,
-    color: '#228B22',
+    color: '#1E3A8A',
     fontWeight: '500',
   },
   logo: {
     fontSize: 24,
     fontWeight: 'bold',
-    color: '#228B22',
+    color: '#1E3A8A',
   },
   content: {
     flex: 1,
     paddingHorizontal: 20,
   },
+  inner: {
+    width: '100%',
+    maxWidth: 980,
+    alignSelf: 'center',
+  },
   startWorkoutSection: {
-    marginTop: 20,
-    marginBottom: 30,
+    marginTop: 16,
+    marginBottom: 12,
   },
   sectionTitle: {
     fontSize: 20,
     fontWeight: 'bold',
-    color: '#228B22',
+    color: '#1E3A8A',
     marginBottom: 12,
   },
   workoutNameInput: {
-    backgroundColor: '#F8FFF8',
+    backgroundColor: '#F8FAFF',
     borderRadius: 12,
     paddingHorizontal: 16,
     paddingVertical: 14,
@@ -803,9 +794,9 @@ const styles = StyleSheet.create({
     marginBottom: 16,
   },
   startButton: {
-    backgroundColor: '#228B22',
-    borderRadius: 12,
-    paddingVertical: 16,
+    backgroundColor: '#2563EB',
+    borderRadius: 10,
+    paddingVertical: 12,
     alignItems: 'center',
   },
   startButtonText: {
@@ -814,7 +805,8 @@ const styles = StyleSheet.create({
     fontWeight: '600',
   },
   historySection: {
-    marginBottom: 20,
+    marginTop: 12,
+    marginBottom: 8,
   },
   emptyState: {
     alignItems: 'center',
@@ -830,7 +822,7 @@ const styles = StyleSheet.create({
     color: '#999999',
   },
   workoutCard: {
-    backgroundColor: '#F8FFF8',
+    backgroundColor: '#F8FAFF',
     borderRadius: 12,
     padding: 16,
     marginBottom: 12,
@@ -860,7 +852,7 @@ const styles = StyleSheet.create({
   statValue: {
     fontSize: 18,
     fontWeight: 'bold',
-    color: '#228B22',
+    color: '#1E3A8A',
   },
   statLabel: {
     fontSize: 12,
@@ -868,7 +860,7 @@ const styles = StyleSheet.create({
     marginTop: 4,
   },
   activeWorkoutHeader: {
-    backgroundColor: '#F8FFF8',
+    backgroundColor: '#F8FAFF',
     borderRadius: 12,
     padding: 16,
     marginTop: 20,
@@ -878,7 +870,7 @@ const styles = StyleSheet.create({
   workoutTitle: {
     fontSize: 20,
     fontWeight: 'bold',
-    color: '#228B22',
+    color: '#1E3A8A',
     marginBottom: 4,
   },
   workoutDuration: {
@@ -895,7 +887,7 @@ const styles = StyleSheet.create({
     marginBottom: 16,
   },
   addExerciseButton: {
-    backgroundColor: '#228B22',
+    backgroundColor: '#2563EB',
     borderRadius: 8,
     paddingHorizontal: 12,
     paddingVertical: 8,
@@ -906,7 +898,7 @@ const styles = StyleSheet.create({
     fontWeight: '600',
   },
   exerciseCard: {
-    backgroundColor: '#F8FFF8',
+    backgroundColor: '#F8FAFF',
     borderRadius: 12,
     padding: 16,
     marginBottom: 12,
@@ -970,7 +962,7 @@ const styles = StyleSheet.create({
     marginLeft: 8,
   },
   completeButtonActive: {
-    backgroundColor: '#228B22',
+    backgroundColor: '#2563EB',
   },
   completeButtonText: {
     color: '#FFFFFF',
@@ -978,14 +970,14 @@ const styles = StyleSheet.create({
     fontWeight: 'bold',
   },
   addSetButton: {
-    backgroundColor: '#E8F5E8',
+    backgroundColor: '#EAF2FF',
     borderRadius: 8,
     paddingVertical: 8,
     alignItems: 'center',
     marginTop: 8,
   },
   addSetButtonText: {
-    color: '#228B22',
+    color: '#2563EB',
     fontSize: 14,
     fontWeight: '600',
   },
@@ -1003,7 +995,7 @@ const styles = StyleSheet.create({
     color: '#999999',
   },
   finishButton: {
-    backgroundColor: '#228B22',
+    backgroundColor: '#2563EB',
     borderRadius: 12,
     paddingVertical: 16,
     alignItems: 'center',
@@ -1043,14 +1035,14 @@ const styles = StyleSheet.create({
   },
   summaryLabel: {
     fontSize: 12,
-    color: '#7A9E7A',
+    color: '#3B82F6',
     marginBottom: 6,
     fontWeight: '500',
   },
   summaryValue: {
     fontSize: 20,
     fontWeight: 'bold',
-    color: '#228B22',
+    color: '#1E3A8A',
   },
   listSection: {
     marginTop: 20,
@@ -1075,21 +1067,21 @@ const styles = StyleSheet.create({
   weekItemTitle: {
     fontSize: 16,
     fontWeight: '600',
-    color: '#2F4F2F',
+    color: '#1E3A8A',
   },
   weekItemMeta: {
     fontSize: 12,
-    color: '#708070',
+    color: '#64748B',
   },
   weekItemNotes: {
     marginTop: 6,
     fontSize: 13,
-    color: '#4F5C4F',
+    color: '#475569',
   },
   tabRow: {
     flexDirection: 'row',
     marginBottom: 12,
-    backgroundColor: '#F0FFF0',
+    backgroundColor: '#E8F0FE',
     borderRadius: 10,
     padding: 4,
   },
@@ -1103,11 +1095,11 @@ const styles = StyleSheet.create({
     backgroundColor: '#FFFFFF',
   },
   tabText: {
-    color: '#4A774A',
+    color: '#1E3A8A',
     fontWeight: '600',
   },
   tabTextActive: {
-    color: '#228B22',
+    color: '#2563EB',
   },
   chartRow: {
     flexDirection: 'row',
@@ -1120,26 +1112,26 @@ const styles = StyleSheet.create({
   },
   bar: {
     width: 20,
-    backgroundColor: '#228B22',
+    backgroundColor: '#2563EB',
     borderTopLeftRadius: 6,
     borderTopRightRadius: 6,
   },
   barLabel: {
     marginTop: 6,
     fontSize: 10,
-    color: '#708070',
+    color: '#64748B',
   },
   statsButton: {
     backgroundColor: '#FFFFFF',
-    borderRadius: 12,
-    paddingVertical: 16,
+    borderRadius: 10,
+    paddingVertical: 12,
     alignItems: 'center',
     marginLeft: 12,
-    borderWidth: 2,
-    borderColor: '#228B22',
+    borderWidth: 1,
+    borderColor: '#2563EB',
   },
   statsButtonText: {
-    color: '#228B22',
+    color: '#2563EB',
     fontSize: 16,
     fontWeight: '600',
   },
@@ -1160,7 +1152,7 @@ const styles = StyleSheet.create({
   modalTitle: {
     fontSize: 20,
     fontWeight: 'bold',
-    color: '#228B22',
+    color: '#1E3A8A',
     textAlign: 'center',
     marginBottom: 20,
   },
@@ -1170,11 +1162,11 @@ const styles = StyleSheet.create({
   inputLabel: {
     fontSize: 14,
     fontWeight: '600',
-    color: '#228B22',
+    color: '#1E3A8A',
     marginBottom: 8,
   },
   categoryButton: {
-    backgroundColor: '#F8FFF8',
+    backgroundColor: '#F8FAFF',
     borderRadius: 20,
     paddingHorizontal: 16,
     paddingVertical: 8,
@@ -1183,7 +1175,7 @@ const styles = StyleSheet.create({
     borderColor: '#E0E0E0',
   },
   categoryButtonActive: {
-    backgroundColor: '#228B22',
+    backgroundColor: '#2563EB',
   },
   categoryButtonText: {
     fontSize: 14,
@@ -1200,7 +1192,7 @@ const styles = StyleSheet.create({
     maxHeight: 200,
   },
   exerciseButton: {
-    backgroundColor: '#F8FFF8',
+    backgroundColor: '#F8FAFF',
     borderRadius: 8,
     paddingHorizontal: 16,
     paddingVertical: 12,
@@ -1209,7 +1201,7 @@ const styles = StyleSheet.create({
     borderColor: '#E0E0E0',
   },
   exerciseButtonActive: {
-    backgroundColor: '#228B22',
+    backgroundColor: '#2563EB',
   },
   exerciseButtonText: {
     fontSize: 14,
@@ -1240,14 +1232,14 @@ const styles = StyleSheet.create({
   },
   addButton: {
     flex: 1,
-    backgroundColor: '#228B22',
+    backgroundColor: '#2563EB',
     borderRadius: 12,
     paddingVertical: 12,
     alignItems: 'center',
     marginLeft: 8,
   },
   addButtonDisabled: {
-    backgroundColor: '#E0E0E0',
+    backgroundColor: '#E0E7FF',
   },
   addButtonText: {
     color: '#FFFFFF',

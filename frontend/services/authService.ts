@@ -35,16 +35,29 @@ export class AuthService {
       });
 
       if (!response.ok) {
-        const errorData = await response.json();
+        const errorData = await response.json().catch(() => ({}));
         throw new Error(errorData.detail || 'Registration failed');
       }
 
       const userData = await response.json();
-      
-      // Store user data locally
       await this.setCurrentUser(userData);
-      
-      return userData;
+
+      // Try to obtain a token by logging in
+      try {
+        const loginResp = await fetch(`${API_BASE_URL}/users/login`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ email: email.toLowerCase(), password }),
+        });
+        if (loginResp.ok) {
+          const loginData = await loginResp.json();
+          await AsyncStorage.setItem(TOKEN_KEY, loginData.access_token);
+          await this.setCurrentUser(loginData.user);
+          return loginData.user as User;
+        }
+      } catch (_) {}
+
+      return userData as User;
     } catch (error) {
       console.error('Registration error:', error);
       throw error;
@@ -66,17 +79,14 @@ export class AuthService {
       });
 
       if (!response.ok) {
-        const errorData = await response.json();
+        const errorData = await response.json().catch(() => ({}));
         throw new Error(errorData.detail || 'Login failed');
       }
 
       const loginData = await response.json();
-      
-      // Store token and user data
       await AsyncStorage.setItem(TOKEN_KEY, loginData.access_token);
       await this.setCurrentUser(loginData.user);
-      
-      return loginData.user;
+      return loginData.user as User;
     } catch (error) {
       console.error('Login error:', error);
       throw error;
