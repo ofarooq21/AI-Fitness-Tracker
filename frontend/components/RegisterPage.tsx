@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useMemo, useState } from 'react';
 import { StyleSheet, Text, View, TextInput, TouchableOpacity, SafeAreaView, Alert } from 'react-native';
 import { AuthService } from '../services/authService';
 
@@ -15,28 +15,39 @@ export default function RegisterPage({ onBackToLogin, onRegisterSuccess }: Regis
     confirmPassword: ''
   });
   const [isLoading, setIsLoading] = useState(false);
+  const [touched, setTouched] = useState<{[k: string]: boolean}>({});
+
+  const errors = useMemo(() => {
+    const e: {[k: string]: string} = {};
+    const name = formData.name.trim();
+    const email = formData.email.trim();
+    const password = formData.password.trim();
+    const confirmPassword = formData.confirmPassword.trim();
+    if (name.length < 2) e.name = 'Please enter your full name';
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    if (!emailRegex.test(email)) e.email = 'Enter a valid email';
+    if (password.length < 6) e.password = 'Min 6 characters';
+    if (password !== confirmPassword) e.confirmPassword = 'Passwords do not match';
+    return e;
+  }, [formData]);
+
+  const isValid = Object.keys(errors).length === 0
+    && formData.name && formData.email && formData.password && formData.confirmPassword;
 
   const handleRegister = async () => {
-    if (!formData.name || !formData.email || !formData.password || !formData.confirmPassword) {
-      Alert.alert('Error', 'Please fill in all fields');
-      return;
-    }
-
-    if (formData.password !== formData.confirmPassword) {
-      Alert.alert('Error', 'Passwords do not match');
-      return;
-    }
-
-    if (formData.password.length < 6) {
-      Alert.alert('Error', 'Password must be at least 6 characters long');
+    const name = formData.name.trim();
+    const email = formData.email.trim();
+    const password = formData.password.trim();
+    const confirmPassword = formData.confirmPassword.trim();
+    setTouched({ name: true, email: true, password: true, confirmPassword: true });
+    if (!isValid) {
+      Alert.alert('Error', 'Please resolve the highlighted fields');
       return;
     }
 
     setIsLoading(true);
-    
     try {
-      const user = await AuthService.register(formData.email, formData.password, formData.name);
-      await AuthService.setCurrentUser(user);
+      const user = await AuthService.register(email, password, name);
       Alert.alert('Success', 'Account created successfully!', [
         { text: 'OK', onPress: () => onRegisterSuccess(user) }
       ]);
@@ -53,13 +64,13 @@ export default function RegisterPage({ onBackToLogin, onRegisterSuccess }: Regis
         <TouchableOpacity onPress={onBackToLogin} style={styles.backButton}>
           <Text style={styles.backButtonText}>← Back</Text>
         </TouchableOpacity>
-        <Text style={styles.logo}>🥬 Celery</Text>
+        <Text style={styles.logo}>🍽️ NutrifyAI</Text>
       </View>
 
       <View style={styles.content}>
         <View style={styles.formContainer}>
           <Text style={styles.title}>Create Account</Text>
-          <Text style={styles.subtitle}>Join Celery and start your fitness journey</Text>
+          <Text style={styles.subtitle}>Join NutrifyAI and start your journey</Text>
 
           <View style={styles.inputContainer}>
             <Text style={styles.inputLabel}>Full Name</Text>
@@ -72,6 +83,7 @@ export default function RegisterPage({ onBackToLogin, onRegisterSuccess }: Regis
               autoCapitalize="words"
               autoCorrect={false}
             />
+            {touched.name && errors.name ? <Text style={styles.errorText}>{errors.name}</Text> : null}
           </View>
 
           <View style={styles.inputContainer}>
@@ -86,6 +98,7 @@ export default function RegisterPage({ onBackToLogin, onRegisterSuccess }: Regis
               autoCapitalize="none"
               autoCorrect={false}
             />
+            {touched.email && errors.email ? <Text style={styles.errorText}>{errors.email}</Text> : null}
           </View>
 
           <View style={styles.inputContainer}>
@@ -100,6 +113,7 @@ export default function RegisterPage({ onBackToLogin, onRegisterSuccess }: Regis
               autoCapitalize="none"
               autoCorrect={false}
             />
+            {touched.password && errors.password ? <Text style={styles.errorText}>{errors.password}</Text> : null}
           </View>
 
           <View style={styles.inputContainer}>
@@ -114,26 +128,21 @@ export default function RegisterPage({ onBackToLogin, onRegisterSuccess }: Regis
               autoCapitalize="none"
               autoCorrect={false}
             />
+            {touched.confirmPassword && errors.confirmPassword ? <Text style={styles.errorText}>{errors.confirmPassword}</Text> : null}
           </View>
 
           <TouchableOpacity
-            style={[styles.registerButton, isLoading && styles.registerButtonDisabled]}
+            style={[styles.registerButton, (isLoading || !isValid) && styles.registerButtonDisabled]}
             onPress={handleRegister}
-            disabled={isLoading}
+            disabled={isLoading || !isValid}
           >
             <Text style={styles.registerButtonText}>
               {isLoading ? 'Creating Account...' : 'Create Account'}
             </Text>
           </TouchableOpacity>
 
-          <View style={styles.divider}>
-            <View style={styles.dividerLine} />
-            <Text style={styles.dividerText}>or</Text>
-            <View style={styles.dividerLine} />
-          </View>
-
-          <TouchableOpacity style={styles.loginButton} onPress={onBackToLogin}>
-            <Text style={styles.loginButtonText}>Already have an account? Sign In</Text>
+          <TouchableOpacity style={styles.backBottomButton} onPress={onBackToLogin}>
+            <Text style={styles.backBottomButtonText}>Back</Text>
           </TouchableOpacity>
         </View>
       </View>
@@ -152,20 +161,20 @@ const styles = StyleSheet.create({
     paddingHorizontal: 20,
     paddingTop: 20,
     paddingBottom: 10,
-    backgroundColor: '#F0FFF0',
+    backgroundColor: '#F2F6FF',
   },
   backButton: {
     marginRight: 20,
   },
   backButtonText: {
     fontSize: 16,
-    color: '#228B22',
+    color: '#1E3A8A',
     fontWeight: '500',
   },
   logo: {
     fontSize: 24,
     fontWeight: 'bold',
-    color: '#228B22',
+    color: '#1E3A8A',
   },
   content: {
     flex: 1,
@@ -173,7 +182,7 @@ const styles = StyleSheet.create({
     paddingHorizontal: 24,
   },
   formContainer: {
-    backgroundColor: '#F8FFF8',
+    backgroundColor: '#F8FAFF',
     borderRadius: 16,
     padding: 24,
     shadowColor: '#000',
@@ -188,7 +197,7 @@ const styles = StyleSheet.create({
   title: {
     fontSize: 28,
     fontWeight: 'bold',
-    color: '#228B22',
+    color: '#1E3A8A',
     textAlign: 'center',
     marginBottom: 8,
   },
@@ -204,7 +213,7 @@ const styles = StyleSheet.create({
   inputLabel: {
     fontSize: 14,
     fontWeight: '600',
-    color: '#228B22',
+    color: '#1E3A8A',
     marginBottom: 8,
   },
   input: {
@@ -219,6 +228,7 @@ const styles = StyleSheet.create({
   },
   registerButton: {
     backgroundColor: '#228B22',
+    backgroundColor: '#2563EB',
     borderRadius: 12,
     paddingVertical: 16,
     alignItems: 'center',
@@ -226,34 +236,35 @@ const styles = StyleSheet.create({
     marginBottom: 24,
   },
   registerButtonDisabled: {
-    backgroundColor: '#90EE90',
+    backgroundColor: '#93C5FD',
   },
   registerButtonText: {
     color: '#FFFFFF',
     fontSize: 16,
     fontWeight: '600',
   },
-  divider: {
-    flexDirection: 'row',
+  errorText: {
+    color: '#B00020',
+    marginTop: 6,
+    fontSize: 13,
+  },
+  divider: { display: 'none' },
+  dividerLine: { display: 'none' },
+  dividerText: { display: 'none' },
+  loginButton: { display: 'none' },
+  loginButtonText: { display: 'none' },
+  backBottomButton: {
+    backgroundColor: '#FFFFFF',
+    borderRadius: 12,
+    paddingVertical: 16,
     alignItems: 'center',
-    marginVertical: 24,
+    borderWidth: 2,
+    borderColor: '#E0E0E0',
+    marginTop: 8,
   },
-  dividerLine: {
-    flex: 1,
-    height: 1,
-    backgroundColor: '#E0E0E0',
-  },
-  dividerText: {
-    marginHorizontal: 16,
-    color: '#999999',
-    fontSize: 14,
-  },
-  loginButton: {
-    alignItems: 'center',
-  },
-  loginButtonText: {
-    color: '#228B22',
-    fontSize: 14,
-    textDecorationLine: 'underline',
+  backBottomButtonText: {
+    color: '#374151',
+    fontSize: 16,
+    fontWeight: '600',
   },
 });

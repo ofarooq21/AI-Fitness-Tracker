@@ -6,15 +6,20 @@ interface LoginPageProps {
   onBackToHome: () => void;
   onLoginSuccess: (user: any) => void;
   onShowRegister: () => void;
+  successMessage?: string;
+  defaultEmail?: string;
 }
 
-export default function LoginPage({ onBackToHome, onLoginSuccess, onShowRegister }: LoginPageProps) {
-  const [email, setEmail] = useState('');
+export default function LoginPage({ onBackToHome, onLoginSuccess, onShowRegister, successMessage, defaultEmail }: LoginPageProps) {
+  const [email, setEmail] = useState(defaultEmail || '');
   const [password, setPassword] = useState('');
   const [isLoading, setIsLoading] = useState(false);
+  const isValid = email.trim().length > 3 && password.trim().length >= 6;
 
   const handleLogin = async () => {
-    if (!email || !password) {
+    const trimmedEmail = email.trim();
+    const trimmedPassword = password.trim();
+    if (!trimmedEmail || !trimmedPassword) {
       Alert.alert('Error', 'Please fill in all fields');
       return;
     }
@@ -22,7 +27,7 @@ export default function LoginPage({ onBackToHome, onLoginSuccess, onShowRegister
     setIsLoading(true);
     
     try {
-      const user = await AuthService.login(email, password);
+      const user = await AuthService.login(trimmedEmail, trimmedPassword);
       await AuthService.setCurrentUser(user);
       Alert.alert('Success', `Welcome back, ${user.name}!`, [
         { text: 'OK', onPress: () => onLoginSuccess(user) }
@@ -40,11 +45,16 @@ export default function LoginPage({ onBackToHome, onLoginSuccess, onShowRegister
         <TouchableOpacity onPress={onBackToHome} style={styles.backButton}>
           <Text style={styles.backButtonText}>← Back</Text>
         </TouchableOpacity>
-        <Text style={styles.logo}>🥬 Celery</Text>
+        <Text style={styles.logo}>🍽️ NutrifyAI</Text>
       </View>
 
       <View style={styles.content}>
         <View style={styles.formContainer}>
+          {successMessage ? (
+            <View style={styles.successBanner}>
+              <Text style={styles.successText}>{successMessage}</Text>
+            </View>
+          ) : null}
           <Text style={styles.title}>Welcome Back</Text>
           <Text style={styles.subtitle}>Sign in to continue your fitness journey</Text>
 
@@ -77,27 +87,21 @@ export default function LoginPage({ onBackToHome, onLoginSuccess, onShowRegister
           </View>
 
           <TouchableOpacity
-            style={[styles.loginButton, isLoading && styles.loginButtonDisabled]}
+            style={[styles.loginButton, (isLoading || !isValid) && styles.loginButtonDisabled]}
             onPress={handleLogin}
-            disabled={isLoading}
+            disabled={isLoading || !isValid}
           >
             <Text style={styles.loginButtonText}>
               {isLoading ? 'Signing In...' : 'Sign In'}
             </Text>
           </TouchableOpacity>
 
-          <View style={styles.divider}>
-            <View style={styles.dividerLine} />
-            <Text style={styles.dividerText}>or</Text>
-            <View style={styles.dividerLine} />
-          </View>
-
           <TouchableOpacity style={styles.registerButton} onPress={onShowRegister}>
             <Text style={styles.registerButtonText}>Create New Account</Text>
           </TouchableOpacity>
 
-          <TouchableOpacity style={styles.forgotPassword}>
-            <Text style={styles.forgotPasswordText}>Forgot Password?</Text>
+          <TouchableOpacity style={styles.backBottomButton} onPress={onBackToHome}>
+            <Text style={styles.backBottomButtonText}>Back</Text>
           </TouchableOpacity>
         </View>
       </View>
@@ -116,20 +120,20 @@ const styles = StyleSheet.create({
     paddingHorizontal: 20,
     paddingTop: 20,
     paddingBottom: 10,
-    backgroundColor: '#F0FFF0',
+    backgroundColor: '#F2F6FF',
   },
   backButton: {
     marginRight: 20,
   },
   backButtonText: {
     fontSize: 16,
-    color: '#228B22',
+    color: '#1E3A8A',
     fontWeight: '500',
   },
   logo: {
     fontSize: 24,
     fontWeight: 'bold',
-    color: '#228B22',
+    color: '#1E3A8A',
   },
   content: {
     flex: 1,
@@ -137,7 +141,7 @@ const styles = StyleSheet.create({
     paddingHorizontal: 24,
   },
   formContainer: {
-    backgroundColor: '#F8FFF8',
+    backgroundColor: '#F8FAFF',
     borderRadius: 16,
     padding: 24,
     shadowColor: '#000',
@@ -149,10 +153,23 @@ const styles = StyleSheet.create({
     shadowRadius: 8,
     elevation: 4,
   },
+  successBanner: {
+    marginBottom: 12,
+    backgroundColor: '#EAF2FF',
+    borderColor: '#BFD6FF',
+    borderWidth: 1,
+    borderRadius: 8,
+    padding: 12,
+  },
+  successText: {
+    color: '#1E3A8A',
+    fontWeight: '600',
+    textAlign: 'center',
+  },
   title: {
     fontSize: 28,
     fontWeight: 'bold',
-    color: '#228B22',
+    color: '#1E3A8A',
     textAlign: 'center',
     marginBottom: 8,
   },
@@ -168,7 +185,7 @@ const styles = StyleSheet.create({
   inputLabel: {
     fontSize: 14,
     fontWeight: '600',
-    color: '#228B22',
+    color: '#1E3A8A',
     marginBottom: 8,
   },
   input: {
@@ -182,7 +199,7 @@ const styles = StyleSheet.create({
     borderColor: '#E0E0E0',
   },
   loginButton: {
-    backgroundColor: '#228B22',
+    backgroundColor: '#2563EB',
     borderRadius: 12,
     paddingVertical: 16,
     alignItems: 'center',
@@ -190,7 +207,7 @@ const styles = StyleSheet.create({
     marginBottom: 24,
   },
   loginButtonDisabled: {
-    backgroundColor: '#90EE90',
+    backgroundColor: '#93C5FD',
   },
   loginButtonText: {
     color: '#FFFFFF',
@@ -198,19 +215,7 @@ const styles = StyleSheet.create({
     fontWeight: '600',
   },
   divider: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    marginVertical: 24,
-  },
-  dividerLine: {
-    flex: 1,
-    height: 1,
-    backgroundColor: '#E0E0E0',
-  },
-  dividerText: {
-    marginHorizontal: 16,
-    color: '#999999',
-    fontSize: 14,
+    display: 'none',
   },
   registerButton: {
     backgroundColor: '#FFFFFF',
@@ -218,20 +223,32 @@ const styles = StyleSheet.create({
     paddingVertical: 16,
     alignItems: 'center',
     borderWidth: 2,
-    borderColor: '#228B22',
+    borderColor: '#2563EB',
     marginBottom: 16,
   },
   registerButtonText: {
-    color: '#228B22',
+    color: '#2563EB',
     fontSize: 16,
     fontWeight: '600',
   },
   forgotPassword: {
-    alignItems: 'center',
+    display: 'none',
   },
   forgotPasswordText: {
-    color: '#228B22',
-    fontSize: 14,
-    textDecorationLine: 'underline',
+    display: 'none',
+  },
+  backBottomButton: {
+    backgroundColor: '#FFFFFF',
+    borderRadius: 12,
+    paddingVertical: 16,
+    alignItems: 'center',
+    borderWidth: 2,
+    borderColor: '#E0E0E0',
+    marginTop: 8,
+  },
+  backBottomButtonText: {
+    color: '#374151',
+    fontSize: 16,
+    fontWeight: '600',
   },
 });

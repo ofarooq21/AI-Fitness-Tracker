@@ -10,6 +10,8 @@ import {
   Alert,
   Modal
 } from 'react-native';
+import AsyncStorage from '@react-native-async-storage/async-storage';
+import { AuthService } from '../services/authService';
 
 interface Exercise {
   id: string;
@@ -56,7 +58,8 @@ const EXERCISE_CATEGORIES = [
   { name: 'Cardio', exercises: ['Running', 'Cycling', 'Rowing', 'Swimming'] }
 ];
 
-export default function WorkoutTracker({ onBackToHome, userId }: WorkoutTrackerProps) {
+export default function WorkoutTracker({ onBackToHome }: WorkoutTrackerProps) {
+  const [userId, setUserId] = useState<string>('guest');
   const [currentWorkout, setCurrentWorkout] = useState<WorkoutSession | null>(null);
   const [workoutHistory, setWorkoutHistory] = useState<WorkoutSession[]>([]);
   const [showAddExercise, setShowAddExercise] = useState(false);
@@ -81,38 +84,19 @@ export default function WorkoutTracker({ onBackToHome, userId }: WorkoutTrackerP
     loadWorkoutHistory();
   }, []);
 
-  // Keep forecast user id in sync with prop changes
   useEffect(() => {
-    if (userId && userId !== forecastUserId) {
-      setForecastUserId(userId);
-    }
-  }, [userId]);
+    AuthService.getCurrentUser().then(u => setUserId(u?.id || 'guest')).catch(() => setUserId('guest'));
+  }, []);
 
-  const loadWorkoutHistory = () => {
-    // In a real app, this would load from backend
-    // For now, we'll use some sample data
-    const sampleWorkouts: WorkoutSession[] = [
-      {
-        id: '1',
-        name: 'Upper Body Strength',
-        date: new Date().toISOString().split('T')[0],
-        duration: 45,
-        totalSets: 12,
-        totalVolume: 2500,
-        exercises: [
-          {
-            id: '1',
-            exercise: { id: '1', name: 'Bench Press', category: 'Chest' },
-            sets: [
-              { id: '1', reps: 10, weight: 135, completed: true },
-              { id: '2', reps: 8, weight: 155, completed: true },
-              { id: '3', reps: 6, weight: 175, completed: true }
-            ]
-          }
-        ]
-      }
-    ];
-    setWorkoutHistory(sampleWorkouts);
+  const STORAGE_KEY = `workout_history_${userId}`;
+
+  const loadWorkoutHistory = async () => {
+    try {
+      const json = await AsyncStorage.getItem(STORAGE_KEY);
+      setWorkoutHistory(json ? JSON.parse(json) : []);
+    } catch (_) {
+      setWorkoutHistory([]);
+    }
   };
 
   const startNewWorkout = () => {
@@ -151,7 +135,9 @@ export default function WorkoutTracker({ onBackToHome, userId }: WorkoutTrackerP
       )
     };
 
-    setWorkoutHistory([updatedWorkout, ...workoutHistory]);
+    const newHistory = [updatedWorkout, ...workoutHistory];
+    setWorkoutHistory(newHistory);
+    AsyncStorage.setItem(STORAGE_KEY, JSON.stringify(newHistory)).catch(() => {});
     setCurrentWorkout(null);
     setStartTime(null);
     Alert.alert('Success', `Workout completed! Duration: ${duration} minutes`);
@@ -762,20 +748,20 @@ const styles = StyleSheet.create({
     paddingHorizontal: 20,
     paddingTop: 20,
     paddingBottom: 10,
-    backgroundColor: '#F0FFF0',
+    backgroundColor: '#F2F6FF',
   },
   backButton: {
     marginRight: 20,
   },
   backButtonText: {
     fontSize: 16,
-    color: '#228B22',
+    color: '#1E3A8A',
     fontWeight: '500',
   },
   logo: {
     fontSize: 24,
     fontWeight: 'bold',
-    color: '#228B22',
+    color: '#1E3A8A',
   },
   content: {
     flex: 1,
@@ -788,11 +774,11 @@ const styles = StyleSheet.create({
   sectionTitle: {
     fontSize: 20,
     fontWeight: 'bold',
-    color: '#228B22',
+    color: '#1E3A8A',
     marginBottom: 12,
   },
   workoutNameInput: {
-    backgroundColor: '#F8FFF8',
+    backgroundColor: '#F8FAFF',
     borderRadius: 12,
     paddingHorizontal: 16,
     paddingVertical: 14,
@@ -803,7 +789,7 @@ const styles = StyleSheet.create({
     marginBottom: 16,
   },
   startButton: {
-    backgroundColor: '#228B22',
+    backgroundColor: '#2563EB',
     borderRadius: 12,
     paddingVertical: 16,
     alignItems: 'center',
@@ -830,7 +816,7 @@ const styles = StyleSheet.create({
     color: '#999999',
   },
   workoutCard: {
-    backgroundColor: '#F8FFF8',
+    backgroundColor: '#F8FAFF',
     borderRadius: 12,
     padding: 16,
     marginBottom: 12,
@@ -860,7 +846,7 @@ const styles = StyleSheet.create({
   statValue: {
     fontSize: 18,
     fontWeight: 'bold',
-    color: '#228B22',
+    color: '#1E3A8A',
   },
   statLabel: {
     fontSize: 12,
@@ -868,7 +854,7 @@ const styles = StyleSheet.create({
     marginTop: 4,
   },
   activeWorkoutHeader: {
-    backgroundColor: '#F8FFF8',
+    backgroundColor: '#F8FAFF',
     borderRadius: 12,
     padding: 16,
     marginTop: 20,
@@ -878,7 +864,7 @@ const styles = StyleSheet.create({
   workoutTitle: {
     fontSize: 20,
     fontWeight: 'bold',
-    color: '#228B22',
+    color: '#1E3A8A',
     marginBottom: 4,
   },
   workoutDuration: {
@@ -895,7 +881,7 @@ const styles = StyleSheet.create({
     marginBottom: 16,
   },
   addExerciseButton: {
-    backgroundColor: '#228B22',
+    backgroundColor: '#2563EB',
     borderRadius: 8,
     paddingHorizontal: 12,
     paddingVertical: 8,
@@ -906,7 +892,7 @@ const styles = StyleSheet.create({
     fontWeight: '600',
   },
   exerciseCard: {
-    backgroundColor: '#F8FFF8',
+    backgroundColor: '#F8FAFF',
     borderRadius: 12,
     padding: 16,
     marginBottom: 12,
@@ -970,7 +956,7 @@ const styles = StyleSheet.create({
     marginLeft: 8,
   },
   completeButtonActive: {
-    backgroundColor: '#228B22',
+    backgroundColor: '#2563EB',
   },
   completeButtonText: {
     color: '#FFFFFF',
@@ -978,14 +964,14 @@ const styles = StyleSheet.create({
     fontWeight: 'bold',
   },
   addSetButton: {
-    backgroundColor: '#E8F5E8',
+    backgroundColor: '#EAF2FF',
     borderRadius: 8,
     paddingVertical: 8,
     alignItems: 'center',
     marginTop: 8,
   },
   addSetButtonText: {
-    color: '#228B22',
+    color: '#2563EB',
     fontSize: 14,
     fontWeight: '600',
   },
@@ -1003,7 +989,7 @@ const styles = StyleSheet.create({
     color: '#999999',
   },
   finishButton: {
-    backgroundColor: '#228B22',
+    backgroundColor: '#2563EB',
     borderRadius: 12,
     paddingVertical: 16,
     alignItems: 'center',
@@ -1174,7 +1160,7 @@ const styles = StyleSheet.create({
     marginBottom: 8,
   },
   categoryButton: {
-    backgroundColor: '#F8FFF8',
+    backgroundColor: '#F8FAFF',
     borderRadius: 20,
     paddingHorizontal: 16,
     paddingVertical: 8,
@@ -1183,7 +1169,7 @@ const styles = StyleSheet.create({
     borderColor: '#E0E0E0',
   },
   categoryButtonActive: {
-    backgroundColor: '#228B22',
+    backgroundColor: '#2563EB',
   },
   categoryButtonText: {
     fontSize: 14,
@@ -1200,7 +1186,7 @@ const styles = StyleSheet.create({
     maxHeight: 200,
   },
   exerciseButton: {
-    backgroundColor: '#F8FFF8',
+    backgroundColor: '#F8FAFF',
     borderRadius: 8,
     paddingHorizontal: 16,
     paddingVertical: 12,
@@ -1209,7 +1195,7 @@ const styles = StyleSheet.create({
     borderColor: '#E0E0E0',
   },
   exerciseButtonActive: {
-    backgroundColor: '#228B22',
+    backgroundColor: '#2563EB',
   },
   exerciseButtonText: {
     fontSize: 14,
@@ -1240,14 +1226,14 @@ const styles = StyleSheet.create({
   },
   addButton: {
     flex: 1,
-    backgroundColor: '#228B22',
+    backgroundColor: '#2563EB',
     borderRadius: 12,
     paddingVertical: 12,
     alignItems: 'center',
     marginLeft: 8,
   },
   addButtonDisabled: {
-    backgroundColor: '#E0E0E0',
+    backgroundColor: '#E0E7FF',
   },
   addButtonText: {
     color: '#FFFFFF',
