@@ -112,7 +112,7 @@ export default function App() {
 
   if (currentPage === 'workout') {
     const goBackTo = currentUser ? showDashboard : showHomePage;
-    return <WorkoutTracker onBackToHome={goBackTo} />;
+    return <WorkoutTracker onBackToHome={goBackTo} userId={currentUser?.id} />;
   }
 
   if (currentPage === 'goalsForm') {

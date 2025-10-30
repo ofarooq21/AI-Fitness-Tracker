@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import { 
   StyleSheet, 
   Text, 
@@ -43,6 +43,7 @@ interface WorkoutSession {
 
 interface WorkoutTrackerProps {
   onBackToHome: () => void;
+  userId?: string;
 }
 
 const EXERCISE_CATEGORIES = [
@@ -55,7 +56,7 @@ const EXERCISE_CATEGORIES = [
   { name: 'Cardio', exercises: ['Running', 'Cycling', 'Rowing', 'Swimming'] }
 ];
 
-export default function WorkoutTracker({ onBackToHome }: WorkoutTrackerProps) {
+export default function WorkoutTracker({ onBackToHome, userId }: WorkoutTrackerProps) {
   const [currentWorkout, setCurrentWorkout] = useState<WorkoutSession | null>(null);
   const [workoutHistory, setWorkoutHistory] = useState<WorkoutSession[]>([]);
   const [showAddExercise, setShowAddExercise] = useState(false);
@@ -63,10 +64,29 @@ export default function WorkoutTracker({ onBackToHome }: WorkoutTrackerProps) {
   const [selectedExercise, setSelectedExercise] = useState('');
   const [workoutName, setWorkoutName] = useState('');
   const [startTime, setStartTime] = useState<Date | null>(null);
+  const [showStats, setShowStats] = useState(false);
+  const [statsTab, setStatsTab] = useState<'local' | 'forecast'>('local');
+  const [forecastUserId, setForecastUserId] = useState(userId || 'demo');
+  const [forecastLoading, setForecastLoading] = useState(false);
+  const [forecastError, setForecastError] = useState<string | null>(null);
+  const [forecastData, setForecastData] = useState<Array<{
+    exercise_name: string;
+    current_1rm_kg: number;
+    target_1rm_kg: number;
+    estimated_completion_date?: string | null;
+    confidence_score?: number | null;
+  }>>([]);
 
   useEffect(() => {
     loadWorkoutHistory();
   }, []);
+
+  // Keep forecast user id in sync with prop changes
+  useEffect(() => {
+    if (userId && userId !== forecastUserId) {
+      setForecastUserId(userId);
+    }
+  }, [userId]);
 
   const loadWorkoutHistory = () => {
     // In a real app, this would load from backend
@@ -135,6 +155,72 @@ export default function WorkoutTracker({ onBackToHome }: WorkoutTrackerProps) {
     setCurrentWorkout(null);
     setStartTime(null);
     Alert.alert('Success', `Workout completed! Duration: ${duration} minutes`);
+  };
+
+  // Weekly summary derived from workoutHistory
+  const weeklySummary = useMemo(() => {
+    const now = new Date();
+    const startOfWeek = new Date(now);
+    // Align to Monday
+    const dayIndex = now.getDay();
+    const diffToMonday = dayIndex === 0 ? 6 : dayIndex - 1;
+    startOfWeek.setHours(0, 0, 0, 0);
+    startOfWeek.setDate(now.getDate() - diffToMonday);
+
+    const workoutsThisWeek = workoutHistory.filter((w) => {
+      const d = new Date(w.date);
+      return d >= startOfWeek && d <= now;
+    });
+
+    const completedThisWeek = workoutsThisWeek.length;
+    const totalMinutes = workoutsThisWeek.reduce((sum, w) => sum + (w.duration || 0), 0);
+
+    const completedDates = new Set(
+      workoutHistory.map((w) => new Date(w.date).toDateString()),
+    );
+    let currentStreak = 0;
+    const checkDate = new Date(now);
+    checkDate.setHours(0, 0, 0, 0);
+    while (completedDates.has(checkDate.toDateString())) {
+      currentStreak += 1;
+      checkDate.setDate(checkDate.getDate() - 1);
+    }
+
+    return { completedThisWeek, totalMinutes, currentStreak };
+  }, [workoutHistory]);
+
+  // Local trends (simple) – total volume by date
+  const localTrends = useMemo(() => {
+    const map: Record<string, { volume: number; sets: number }> = {};
+    for (const w of workoutHistory) {
+      const key = new Date(w.date).toISOString().split('T')[0];
+      map[key] = map[key] || { volume: 0, sets: 0 };
+      map[key].volume += w.totalVolume || 0;
+      map[key].sets += w.totalSets || 0;
+    }
+    const entries = Object.entries(map)
+      .sort((a, b) => new Date(a[0]).getTime() - new Date(b[0]).getTime())
+      .slice(-10); // last 10 days
+    const maxVolume = entries.reduce((m, [, v]) => Math.max(m, v.volume), 0) || 1;
+    return { entries, maxVolume };
+  }, [workoutHistory]);
+
+  const fetchForecast = async () => {
+    try {
+      setForecastLoading(true);
+      setForecastError(null);
+      setForecastData([]);
+      const resp = await fetch(`http://localhost:8000/workouts/users/${encodeURIComponent(forecastUserId)}/workouts/forecast`);
+      if (!resp.ok) {
+        throw new Error(`HTTP ${resp.status}`);
+      }
+      const data = await resp.json();
+      setForecastData(Array.isArray(data) ? data : []);
+    } catch (e: any) {
+      setForecastError(e?.message || 'Failed to load forecast');
+    } finally {
+      setForecastLoading(false);
+    }
   };
 
   const addExercise = () => {
@@ -341,31 +427,55 @@ export default function WorkoutTracker({ onBackToHome }: WorkoutTrackerProps) {
                   </View>
                   
                   <View style={styles.setsContainer}>
-                    {workoutExercise.sets.map((set, index) => (
-                      <View key={set.id} style={styles.setRow}>
-                        <Text style={styles.setNumber}>Set {index + 1}</Text>
-                        <TextInput
-                          style={styles.setInput}
-                          placeholder="Reps"
-                          value={set.reps.toString()}
-                          onChangeText={(text) => updateSet(workoutExercise.id, set.id, 'reps', parseInt(text) || 0)}
-                          keyboardType="numeric"
-                        />
-                        <TextInput
-                          style={styles.setInput}
-                          placeholder="Weight"
-                          value={set.weight.toString()}
-                          onChangeText={(text) => updateSet(workoutExercise.id, set.id, 'weight', parseInt(text) || 0)}
-                          keyboardType="numeric"
-                        />
-                        <TouchableOpacity
-                          style={[styles.completeButton, set.completed && styles.completeButtonActive]}
-                          onPress={() => toggleSetComplete(workoutExercise.id, set.id)}
-                        >
-                          <Text style={styles.completeButtonText}>✓</Text>
-                        </TouchableOpacity>
-                      </View>
-                    ))}
+                    {workoutExercise.sets.map((set, index) => {
+                      const isCardio = (workoutExercise.exercise.category || '').toLowerCase() === 'cardio';
+                      return (
+                        <View key={set.id} style={styles.setRow}>
+                          <Text style={styles.setNumber}>Set {index + 1}</Text>
+                          {isCardio ? (
+                            <>
+                              <TextInput
+                                style={styles.setInput}
+                                placeholder="Distance (km)"
+                                value={(Number.isFinite(set.weight) ? set.weight : 0).toString()}
+                                onChangeText={(text) => updateSet(workoutExercise.id, set.id, 'weight', parseFloat(text) || 0)}
+                                keyboardType="numeric"
+                              />
+                              <TextInput
+                                style={styles.setInput}
+                                placeholder="Time (min)"
+                                value={(Number.isFinite(set.reps) ? set.reps : 0).toString()}
+                                onChangeText={(text) => updateSet(workoutExercise.id, set.id, 'reps', parseInt(text) || 0)}
+                                keyboardType="numeric"
+                              />
+                            </>
+                          ) : (
+                            <>
+                              <TextInput
+                                style={styles.setInput}
+                                placeholder="Reps"
+                                value={set.reps.toString()}
+                                onChangeText={(text) => updateSet(workoutExercise.id, set.id, 'reps', parseInt(text) || 0)}
+                                keyboardType="numeric"
+                              />
+                              <TextInput
+                                style={styles.setInput}
+                                placeholder="Weight"
+                                value={set.weight.toString()}
+                                onChangeText={(text) => updateSet(workoutExercise.id, set.id, 'weight', parseInt(text) || 0)}
+                                keyboardType="numeric"
+                              />
+                            </>
+                          )}
+                          <TouchableOpacity
+                            style={[styles.completeButton, set.completed && styles.completeButtonActive]}
+                            onPress={() => toggleSetComplete(workoutExercise.id, set.id)}
+                          >
+                            <Text style={styles.completeButtonText}>✓</Text>
+                          </TouchableOpacity>
+                        </View>
+                      );
+                    })}
                     <TouchableOpacity 
                       style={styles.addSetButton}
                       onPress={() => addSet(workoutExercise.id)}
@@ -384,13 +494,179 @@ export default function WorkoutTracker({ onBackToHome }: WorkoutTrackerProps) {
               )}
             </View>
 
-            {/* Finish Workout Button */}
+            {/* Finish Workout */}
             <TouchableOpacity style={styles.finishButton} onPress={finishWorkout}>
               <Text style={styles.finishButtonText}>Finish Workout</Text>
             </TouchableOpacity>
           </View>
         )}
       </ScrollView>
+
+      {/* Bottom Summary Section */}
+      <View style={styles.summaryContainer}>
+        <Text style={styles.sectionTitle}>This Week's Summary</Text>
+        <View style={styles.summaryRow}>
+          <View style={styles.summaryCard}>
+            <Text style={styles.summaryLabel}>Sessions</Text>
+            <Text style={styles.summaryValue}>{weeklySummary.completedThisWeek}</Text>
+          </View>
+          <View style={styles.summaryCard}>
+            <Text style={styles.summaryLabel}>Minutes</Text>
+            <Text style={styles.summaryValue}>{weeklySummary.totalMinutes}</Text>
+          </View>
+          <View style={styles.summaryCard}>
+            <Text style={styles.summaryLabel}>Streak</Text>
+            <Text style={styles.summaryValue}>{weeklySummary.currentStreak}🔥</Text>
+          </View>
+        </View>
+
+        <View style={styles.listSection}>
+          <Text style={styles.sectionTitle}>This Week's Log</Text>
+          {workoutHistory.length === 0 ? (
+            <View style={styles.emptyState}>
+              <Text style={styles.emptyStateText}>No workouts yet</Text>
+              <Text style={styles.emptyStateSubtext}>Add a workout to begin your streak.</Text>
+            </View>
+          ) : (
+            workoutHistory
+              .filter((w) => {
+                const now = new Date();
+                const startOfWeek = new Date(now);
+                const dayIndex = now.getDay();
+                const diffToMonday = dayIndex === 0 ? 6 : dayIndex - 1;
+                startOfWeek.setHours(0, 0, 0, 0);
+                startOfWeek.setDate(now.getDate() - diffToMonday);
+                const d = new Date(w.date);
+                return d >= startOfWeek && d <= now;
+              })
+              .sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime())
+              .map((w) => (
+                <View key={w.id} style={styles.weekItem}>
+                  <View style={styles.weekItemHeader}>
+                    <Text style={styles.weekItemTitle}>{w.name}</Text>
+                    <Text style={styles.weekItemMeta}>{w.date} • {w.duration}m • {w.totalSets} sets</Text>
+                  </View>
+                  {w.exercises[0]?.notes ? (
+                    <Text style={styles.weekItemNotes}>{w.exercises[0].notes}</Text>
+                  ) : null}
+                </View>
+              ))
+          )}
+        </View>
+
+        {/* View Progress at Bottom */}
+        <TouchableOpacity style={[styles.statsButton, { marginTop: 12 }]} onPress={() => setShowStats(true)}>
+          <Text style={styles.statsButtonText}>View Progress</Text>
+        </TouchableOpacity>
+      </View>
+
+      {/* Stats & Graphs Modal */}
+      <Modal
+        visible={showStats}
+        animationType="slide"
+        transparent={true}
+        onRequestClose={() => setShowStats(false)}
+      >
+        <View style={styles.modalOverlay}>
+          <View style={[styles.modalContent, { maxWidth: 520 }]}>
+            <Text style={styles.modalTitle}>Training Progress</Text>
+
+            {/* Tabs */}
+            <View style={styles.tabRow}>
+              <TouchableOpacity
+                style={[styles.tabButton, statsTab === 'local' && styles.tabButtonActive]}
+                onPress={() => setStatsTab('local')}
+              >
+                <Text style={[styles.tabText, statsTab === 'local' && styles.tabTextActive]}>Local Trends</Text>
+              </TouchableOpacity>
+              <TouchableOpacity
+                style={[styles.tabButton, statsTab === 'forecast' && styles.tabButtonActive]}
+                onPress={() => setStatsTab('forecast')}
+              >
+                <Text style={[styles.tabText, statsTab === 'forecast' && styles.tabTextActive]}>Forecast</Text>
+              </TouchableOpacity>
+            </View>
+
+            {statsTab === 'local' ? (
+              <View>
+                <Text style={styles.inputLabel}>Volume (last 10 days)</Text>
+                <ScrollView horizontal showsHorizontalScrollIndicator={false} style={{ marginBottom: 16 }}>
+                  <View style={styles.chartRow}>
+                    {localTrends.entries.map(([day, v], idx) => {
+                      const h = Math.max(4, Math.round((v.volume / localTrends.maxVolume) * 120));
+                      return (
+                        <View key={day + idx} style={styles.barItem}>
+                          <View style={[styles.bar, { height: h }]} />
+                          <Text style={styles.barLabel}>{day.slice(5)}</Text>
+                        </View>
+                      );
+                    })}
+                  </View>
+                </ScrollView>
+
+                <View style={styles.summaryRow}>
+                  <View style={styles.summaryCard}>
+                    <Text style={styles.summaryLabel}>Sessions</Text>
+                    <Text style={styles.summaryValue}>{weeklySummary.completedThisWeek}</Text>
+                  </View>
+                  <View style={styles.summaryCard}>
+                    <Text style={styles.summaryLabel}>Minutes</Text>
+                    <Text style={styles.summaryValue}>{weeklySummary.totalMinutes}</Text>
+                  </View>
+                  <View style={styles.summaryCard}>
+                    <Text style={styles.summaryLabel}>Streak</Text>
+                    <Text style={styles.summaryValue}>{weeklySummary.currentStreak}🔥</Text>
+                  </View>
+                </View>
+              </View>
+            ) : (
+              <View>
+                <Text style={styles.inputLabel}>User ID</Text>
+                <TextInput
+                  style={styles.workoutNameInput}
+                  value={forecastUserId}
+                  onChangeText={setForecastUserId}
+                  placeholder="Enter user id"
+                  placeholderTextColor="#999"
+                />
+                <TouchableOpacity style={styles.startButton} onPress={fetchForecast} disabled={forecastLoading}>
+                  <Text style={styles.startButtonText}>{forecastLoading ? 'Loading…' : 'Load Forecast'}</Text>
+                </TouchableOpacity>
+
+                {forecastError ? <Text style={{ color: '#B00020', marginTop: 8 }}>{forecastError}</Text> : null}
+
+                <ScrollView style={{ maxHeight: 260, marginTop: 12 }}>
+                  {forecastData.length === 0 && !forecastLoading ? (
+                    <Text style={{ color: '#666666' }}>No forecast yet. Create workouts and try again.</Text>
+                  ) : (
+                    forecastData.map((f) => (
+                      <View key={f.exercise_name} style={styles.exerciseCard}>
+                        <View style={styles.exerciseHeader}>
+                          <Text style={styles.exerciseName}>{f.exercise_name}</Text>
+                        </View>
+                        <View style={{ flexDirection: 'row', justifyContent: 'space-between' }}>
+                          <Text style={styles.statLabel}>Current 1RM: <Text style={styles.statValue}>{f.current_1rm_kg?.toFixed?.(1) ?? '-'} kg</Text></Text>
+                          <Text style={styles.statLabel}>Target 1RM: <Text style={styles.statValue}>{f.target_1rm_kg?.toFixed?.(1) ?? '-'} kg</Text></Text>
+                        </View>
+                        <View style={{ flexDirection: 'row', justifyContent: 'space-between', marginTop: 6 }}>
+                          <Text style={styles.statLabel}>ETA: <Text style={styles.statValue}>{f.estimated_completion_date ? new Date(f.estimated_completion_date).toDateString() : '—'}</Text></Text>
+                          <Text style={styles.statLabel}>Confidence: <Text style={styles.statValue}>{f.confidence_score != null ? Math.round((f.confidence_score || 0) * 100) + '%' : '—'}</Text></Text>
+                        </View>
+                      </View>
+                    ))
+                  )}
+                </ScrollView>
+              </View>
+            )}
+
+            <View style={styles.modalButtons}>
+              <TouchableOpacity style={styles.cancelButton} onPress={() => setShowStats(false)}>
+                <Text style={styles.cancelButtonText}>Close</Text>
+              </TouchableOpacity>
+            </View>
+          </View>
+        </View>
+      </Modal>
 
       {/* Add Exercise Modal */}
       <Modal
@@ -735,6 +1011,135 @@ const styles = StyleSheet.create({
   },
   finishButtonText: {
     color: '#FFFFFF',
+    fontSize: 16,
+    fontWeight: '600',
+  },
+  actionsRow: {
+    flexDirection: 'row',
+    gap: 12,
+    marginTop: 8,
+    marginBottom: 12,
+  },
+  summaryContainer: {
+    paddingHorizontal: 20,
+    paddingBottom: 20,
+  },
+  summaryRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    marginTop: 12,
+  },
+  summaryCard: {
+    flex: 1,
+    backgroundColor: '#FFFFFF',
+    borderRadius: 12,
+    padding: 16,
+    marginHorizontal: 4,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.05,
+    shadowRadius: 4,
+    elevation: 2,
+  },
+  summaryLabel: {
+    fontSize: 12,
+    color: '#7A9E7A',
+    marginBottom: 6,
+    fontWeight: '500',
+  },
+  summaryValue: {
+    fontSize: 20,
+    fontWeight: 'bold',
+    color: '#228B22',
+  },
+  listSection: {
+    marginTop: 20,
+  },
+  weekItem: {
+    backgroundColor: '#FFFFFF',
+    borderRadius: 12,
+    padding: 14,
+    marginBottom: 10,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.04,
+    shadowRadius: 3,
+    elevation: 1,
+  },
+  weekItemHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: 6,
+  },
+  weekItemTitle: {
+    fontSize: 16,
+    fontWeight: '600',
+    color: '#2F4F2F',
+  },
+  weekItemMeta: {
+    fontSize: 12,
+    color: '#708070',
+  },
+  weekItemNotes: {
+    marginTop: 6,
+    fontSize: 13,
+    color: '#4F5C4F',
+  },
+  tabRow: {
+    flexDirection: 'row',
+    marginBottom: 12,
+    backgroundColor: '#F0FFF0',
+    borderRadius: 10,
+    padding: 4,
+  },
+  tabButton: {
+    flex: 1,
+    paddingVertical: 10,
+    alignItems: 'center',
+    borderRadius: 8,
+  },
+  tabButtonActive: {
+    backgroundColor: '#FFFFFF',
+  },
+  tabText: {
+    color: '#4A774A',
+    fontWeight: '600',
+  },
+  tabTextActive: {
+    color: '#228B22',
+  },
+  chartRow: {
+    flexDirection: 'row',
+    alignItems: 'flex-end',
+    paddingVertical: 12,
+  },
+  barItem: {
+    alignItems: 'center',
+    marginHorizontal: 6,
+  },
+  bar: {
+    width: 20,
+    backgroundColor: '#228B22',
+    borderTopLeftRadius: 6,
+    borderTopRightRadius: 6,
+  },
+  barLabel: {
+    marginTop: 6,
+    fontSize: 10,
+    color: '#708070',
+  },
+  statsButton: {
+    backgroundColor: '#FFFFFF',
+    borderRadius: 12,
+    paddingVertical: 16,
+    alignItems: 'center',
+    marginLeft: 12,
+    borderWidth: 2,
+    borderColor: '#228B22',
+  },
+  statsButtonText: {
+    color: '#228B22',
     fontSize: 16,
     fontWeight: '600',
   },
