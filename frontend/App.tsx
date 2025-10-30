@@ -6,7 +6,7 @@ import LoginPage from './components/LoginPage';
 import RegisterPage from './components/RegisterPage';
 import Dashboard from './components/Dashboard';
 import MacroTracker from './components/MacroTracker';
-import WorkoutTrackerPage from './components/WorkoutTrackerPage';
+import WorkoutTracker from './components/WorkoutTracker';
 import { AuthService, User } from './services/authService';
 
 export default function App() {
@@ -94,6 +94,7 @@ export default function App() {
       <Dashboard
         onLogout={handleLogout}
         onShowMacroTracker={showMacroTracker}
+        onShowWorkoutTracker={showWorkoutPage}
       />
     );
   }
@@ -104,7 +105,8 @@ export default function App() {
   }
 
   if (currentPage === 'workout') {
-    return <WorkoutTrackerPage onBack={showHomePage} />;
+    const goBackTo = currentUser ? showDashboard : showHomePage;
+    return <WorkoutTracker onBackToHome={goBackTo} />;
   }
 
   // Home / Landing
@@ -143,7 +145,7 @@ export default function App() {
               </TouchableOpacity>
               <TouchableOpacity style={styles.featureItem} onPress={showWorkoutPage}>
                 <Text style={styles.featureIcon}>🏋️</Text>
-                <Text style={styles.featureText}>Workout Analysis</Text>
+                <Text style={styles.featureText}>Workout Tracker</Text>
               </TouchableOpacity>
               <View style={styles.featureItem}>
                 <Text style={styles.featureIcon}>🎯</Text>
