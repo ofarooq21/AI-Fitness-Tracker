@@ -1,5 +1,4 @@
 import AsyncStorage from '@react-native-async-storage/async-storage';
-import { supabase } from './supabaseClient';
 
 export interface User {
   id: string;
@@ -15,7 +14,7 @@ export interface UserAccount {
   createdAt: string;
 }
 
-const API_BASE_URL = 'http://localhost:8000'; // kept for optional goals fallback
+const API_BASE_URL = 'http://localhost:8000';
 const TOKEN_KEY = 'celery_auth_token';
 const CURRENT_USER_KEY = 'celery_current_user';
 
@@ -23,26 +22,42 @@ export class AuthService {
   // Register a new user
   static async register(email: string, password: string, name: string): Promise<User> {
     try {
-      const { data, error } = await supabase.auth.signUp({
-        email: email.toLowerCase(),
-        password,
-        options: { data: { name } },
+      const response = await fetch(`${API_BASE_URL}/users/register`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          email: email.toLowerCase(),
+          password,
+          name,
+        }),
       });
-      if (error) throw error;
-      const user = data.user;
-      if (!user) throw new Error('Registration failed');
-      const userOut: User = {
-        id: user.id,
-        email: user.email || email.toLowerCase(),
-        name: (user.user_metadata as any)?.name || name,
-        createdAt: user.created_at || new Date().toISOString(),
-      };
-      await this.setCurrentUser(userOut); // store for UX
-      const session = (await supabase.auth.getSession()).data.session;
-      if (session?.access_token) {
-        await AsyncStorage.setItem(TOKEN_KEY, session.access_token);
+
+      if (!response.ok) {
+        const errorData = await response.json().catch(() => ({}));
+        throw new Error(errorData.detail || 'Registration failed');
       }
-      return userOut;
+
+      const userData = await response.json();
+      await this.setCurrentUser(userData);
+
+      // Try to obtain a token by logging in
+      try {
+        const loginResp = await fetch(`${API_BASE_URL}/users/login`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ email: email.toLowerCase(), password }),
+        });
+        if (loginResp.ok) {
+          const loginData = await loginResp.json();
+          await AsyncStorage.setItem(TOKEN_KEY, loginData.access_token);
+          await this.setCurrentUser(loginData.user);
+          return loginData.user as User;
+        }
+      } catch (_) {}
+
+      return userData as User;
     } catch (error) {
       console.error('Registration error:', error);
       throw error;
@@ -52,23 +67,26 @@ export class AuthService {
   // Login user
   static async login(email: string, password: string): Promise<User> {
     try {
-      const { data, error } = await supabase.auth.signInWithPassword({
-        email: email.toLowerCase(),
-        password,
+      const response = await fetch(`${API_BASE_URL}/users/login`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          email: email.toLowerCase(),
+          password,
+        }),
       });
-      if (error) throw error;
-      const session = data.session;
-      const user = data.user;
-      if (!user || !session) throw new Error('Login failed');
-      const userOut: User = {
-        id: user.id,
-        email: user.email || email.toLowerCase(),
-        name: (user.user_metadata as any)?.name || 'User',
-        createdAt: user.created_at || new Date().toISOString(),
-      };
-      await AsyncStorage.setItem(TOKEN_KEY, session.access_token);
-      await this.setCurrentUser(userOut);
-      return userOut;
+
+      if (!response.ok) {
+        const errorData = await response.json().catch(() => ({}));
+        throw new Error(errorData.detail || 'Login failed');
+      }
+
+      const loginData = await response.json();
+      await AsyncStorage.setItem(TOKEN_KEY, loginData.access_token);
+      await this.setCurrentUser(loginData.user);
+      return loginData.user as User;
     } catch (error) {
       console.error('Login error:', error);
       throw error;
@@ -78,19 +96,6 @@ export class AuthService {
   // Get current logged in user
   static async getCurrentUser(): Promise<User | null> {
     try {
-      // Prefer supabase session
-      const { data } = await supabase.auth.getUser();
-      const sUser = data.user;
-      if (sUser) {
-        const userOut: User = {
-          id: sUser.id,
-          email: sUser.email || '',
-          name: (sUser.user_metadata as any)?.name || 'User',
-          createdAt: sUser.created_at || new Date().toISOString(),
-        };
-        await this.setCurrentUser(userOut);
-        return userOut;
-      }
       const userJson = await AsyncStorage.getItem(CURRENT_USER_KEY);
       return userJson ? JSON.parse(userJson) : null;
     } catch (error) {
@@ -127,7 +132,6 @@ export class AuthService {
   static async logout(): Promise<void> {
     await AsyncStorage.removeItem(TOKEN_KEY);
     await this.setCurrentUser(null);
-    await supabase.auth.signOut();
   }
 
   // Check if user is logged in
@@ -139,7 +143,7 @@ export class AuthService {
 
   // Make authenticated API request
   static async makeAuthenticatedRequest(endpoint: string, options: RequestInit = {}): Promise<Response> {
-    const token = (await supabase.auth.getSession()).data.session?.access_token || await this.getAuthToken();
+    const token = await this.getAuthToken();
     
     if (!token) {
       throw new Error('No authentication token found');

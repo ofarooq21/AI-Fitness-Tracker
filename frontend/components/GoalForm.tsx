@@ -126,7 +126,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'space-between',
     padding: 16,
-    backgroundColor: '#F0FFF0',
+    backgroundColor: '#F2F6FF',
   },
   backButton: {
     paddingHorizontal: 12,
@@ -137,13 +137,13 @@ const styles = StyleSheet.create({
     borderColor: '#DDD',
   },
   backButtonText: {
-    color: '#228B22',
+    color: '#1E3A8A',
     fontWeight: '600',
   },
   title: {
     fontSize: 18,
     fontWeight: '700',
-    color: '#228B22',
+    color: '#1E3A8A',
   },
   form: {
     padding: 16,
@@ -177,7 +177,7 @@ const styles = StyleSheet.create({
     marginRight: 8,
   },
   segmentItemActive: {
-    backgroundColor: '#228B22',
+    backgroundColor: '#2563EB',
   },
   segmentText: {
     color: '#333',
@@ -193,7 +193,7 @@ const styles = StyleSheet.create({
   },
   submitButton: {
     marginTop: 20,
-    backgroundColor: '#228B22',
+    backgroundColor: '#2563EB',
     paddingVertical: 14,
     borderRadius: 10,
     alignItems: 'center',

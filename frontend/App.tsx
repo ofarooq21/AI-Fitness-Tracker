@@ -172,6 +172,7 @@ export default function App() {
     return <WorkoutTracker onBackToHome={goBackTo} userId={currentUser?.id} />;
   }
 
+
   if (currentPage === 'goalsForm') {
     const goBackTo = currentUser ? showDashboard : showHomePage;
     return (
@@ -235,10 +236,10 @@ export default function App() {
                 <Text style={styles.featureIcon}>🏋️</Text>
                 <Text style={styles.featureText}>Workout Tracker</Text>
               </TouchableOpacity>
-              <View style={styles.featureItem}>
+              <TouchableOpacity style={styles.featureItem} onPress={showGoalsList}>
                 <Text style={styles.featureIcon}>🎯</Text>
                 <Text style={styles.featureText}>Goal Management</Text>
-              </View>
+              </TouchableOpacity>
               <View style={styles.featureItem}>
                 <Text style={styles.featureIcon}>🤖</Text>
                 <Text style={styles.featureText}>AI Insights</Text>

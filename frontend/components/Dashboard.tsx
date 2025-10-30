@@ -27,10 +27,11 @@ export default function Dashboard({ onLogout, onShowMacroTracker, onShowWorkoutT
       // For now, we'll set a default user count since getUserCount doesn't exist
       setUserCount(1);
       const today = new Date().toISOString().split('T')[0];
-      const mealsJson = await AsyncStorage.getItem(`macro_meals_${today}`);
+      const userId = currentUser?.id || 'guest';
+      const mealsJson = await AsyncStorage.getItem(`macro_meals_${userId}_${today}`);
       const mealsArr = mealsJson ? JSON.parse(mealsJson) : [];
       setTodayMeals(Array.isArray(mealsArr) ? mealsArr.length : 0);
-      const workoutsJson = await AsyncStorage.getItem('workout_history');
+      const workoutsJson = await AsyncStorage.getItem(`workout_history_${userId}`);
       const workouts = workoutsJson ? JSON.parse(workoutsJson) : [];
       if (Array.isArray(workouts) && workouts.length > 0) {
         setLastWorkout({ name: workouts[0].name, date: workouts[0].date });
@@ -111,23 +112,29 @@ export default function Dashboard({ onLogout, onShowMacroTracker, onShowWorkoutT
           </View>
         </View>
 
-        {/* Quick Actions Grid */}
+        {/* Quick Actions */}
         <Text style={styles.sectionTitle}>Quick Actions</Text>
         <View style={styles.grid}>
           <TouchableOpacity style={styles.tile} onPress={onShowMacroTracker}>
             <Text style={styles.tileIcon}>📊</Text>
-            <Text style={styles.tileTitle}>Macro Tracker</Text>
-            <Text style={styles.tileSub}>Track your daily nutrition</Text>
+            <View style={styles.actionContent}>
+              <Text style={styles.tileTitle}>Macro Tracker</Text>
+              <Text style={styles.tileSub}>Track your daily nutrition</Text>
+            </View>
           </TouchableOpacity>
           <TouchableOpacity style={styles.tile} onPress={onShowWorkoutTracker}>
             <Text style={styles.tileIcon}>🏋️</Text>
-            <Text style={styles.tileTitle}>Workout Tracker</Text>
-            <Text style={styles.tileSub}>Log your exercises</Text>
+            <View style={styles.actionContent}>
+              <Text style={styles.tileTitle}>Workout Tracker</Text>
+              <Text style={styles.tileSub}>Log your exercises</Text>
+            </View>
           </TouchableOpacity>
           <TouchableOpacity style={styles.tile} onPress={onShowGoals}>
             <Text style={styles.tileIcon}>🎯</Text>
-            <Text style={styles.tileTitle}>Goals</Text>
-            <Text style={styles.tileSub}>Set and track goals</Text>
+            <View style={styles.actionContent}>
+              <Text style={styles.tileTitle}>Goals</Text>
+              <Text style={styles.tileSub}>Set and track goals</Text>
+            </View>
           </TouchableOpacity>
         </View>
 
@@ -211,10 +218,6 @@ const styles = StyleSheet.create({
     flex: 1,
     paddingHorizontal: 20,
   },
-  statsSection: {
-    marginTop: 20,
-    marginBottom: 20,
-  },
   sectionTitle: {
     fontSize: 20,
     fontWeight: 'bold',
@@ -281,12 +284,12 @@ const styles = StyleSheet.create({
     elevation: 3,
     borderWidth: 1,
     borderColor: '#E5EAF5',
-    marginBottom: 12,
   },
   tileIcon: {
     fontSize: 24,
     marginBottom: 8,
   },
+  actionContent: { flex: 1 },
   tileTitle: {
     fontSize: 16,
     fontWeight: '700',
