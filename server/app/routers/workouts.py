@@ -6,6 +6,9 @@ from app.models.workout import WorkoutCreate, WorkoutOut, WorkoutUpdate, Workout
 from app.core.auth import get_current_user_optional
 from motor.motor_asyncio import AsyncIOMotorDatabase
 import uuid
+from celery.result import AsyncResult
+from celery.exceptions import CeleryError
+from celery_app import celery_app
 
 router = APIRouter(prefix="/workouts", tags=["workouts"])
 
@@ -27,7 +30,12 @@ async def create_workout(
     }
     
     await db.workouts.insert_one(workout_doc)
-    
+    # Fire-and-forget: recompute forecasts for this user
+    try:
+        celery_app.send_task("compute_strength_forecast", args=[workout_data.user_id])
+    except CeleryError:
+        # Non-fatal if queue is unavailable
+        pass
     return WorkoutOut(**workout_doc)
 
 @router.get("", response_model=List[WorkoutSummary])
@@ -105,6 +113,13 @@ async def update_workout(
             {"_id": workout_id},
             {"$set": update_data}
         )
+        # Trigger forecast recomputation
+        user_id = existing_workout.get("user_id")
+        if user_id:
+            try:
+                celery_app.send_task("compute_strength_forecast", args=[user_id])
+            except CeleryError:
+                pass
     
     # Return updated workout
     updated_workout = await db.workouts.find_one({"_id": workout_id})
@@ -123,35 +138,25 @@ async def delete_workout(
             status_code=status.HTTP_404_NOT_FOUND,
             detail="Workout not found"
         )
+    else:
+        # Try to recompute forecasts if we can find the workout's user
+        # Best-effort: this is a delete, so we cannot read it now; noop
+        pass
 
-@router.get("/strength/progress", response_model=List[StrengthProgress])
-async def get_strength_progress(
-    user_id: Optional[str] = Query(None),
-    current_user: dict = Depends(get_current_user_optional),
+@router.get("/users/{user_id}/workouts/forecast", response_model=List[StrengthProgress])
+async def get_workout_forecast(
+    user_id: str,
     db: AsyncIOMotorDatabase = Depends(get_db)
 ):
-    """Get strength progress for a user."""
-    # Use current user's ID if not specified
-    if not user_id and current_user:
-        user_id = current_user.get("user_id", "demo")
-    elif not user_id:
-        user_id = "demo"  # Fallback for demo mode
-    
-    # TODO: Implement actual strength progress calculation
-    # For now, return placeholder data
-    return [
-        StrengthProgress(
-            exercise_name="Bench Press",
-            current_1rm_kg=80.0,
-            target_1rm_kg=100.0,
-            estimated_completion_date=datetime(2024, 6, 1),
-            confidence_score=0.85
-        ),
-        StrengthProgress(
-            exercise_name="Squat",
-            current_1rm_kg=120.0,
-            target_1rm_kg=150.0,
-            estimated_completion_date=datetime(2024, 7, 15),
-            confidence_score=0.78
-        )
-    ]
+    """Retrieve computed strength forecast for charting and ETAs."""
+    cursor = db.get_collection("forecasts").find({"user_id": user_id})
+    items: List[StrengthProgress] = []
+    async for doc in cursor:
+        items.append(StrengthProgress(
+            exercise_name=doc.get("exercise_name"),
+            current_1rm_kg=doc.get("current_1rm_kg") or 0.0,
+            target_1rm_kg=doc.get("target_1rm_kg") or 0.0,
+            estimated_completion_date=doc.get("estimated_completion_date"),
+            confidence_score=doc.get("confidence_score"),
+        ))
+    return items
