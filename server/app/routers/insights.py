@@ -31,21 +31,28 @@ async def get_ai_insights(
     # Use demo user if not authenticated
     user_id = current_user.get("user_id", "demo") if current_user else "demo"
     
+    print(f"[DEBUG] AI Insights - user_id: {user_id}, current_user: {current_user}")
+    
     # Get data from last 7 days
     seven_days_ago = datetime.utcnow() - timedelta(days=7)
+    print(f"[DEBUG] Seven days ago: {seven_days_ago}")
     
-    # Aggregate meals data - include user's meals, demo meals, AND meals without user_id
-    # This helps during development when user might have demo data or old test data
-    query_filter = {
-        "$or": [
-            {"user_id": user_id},
-            {"user_id": "demo"},
-            {"user_id": {"$exists": False}}  # Include meals without user_id (old data)
-        ],
-        "created_at": {"$gte": seven_days_ago}
-    }
+    # Aggregate meals data
+    # If user is authenticated, show only their data
+    # If not authenticated (demo), show ALL data for development/testing
+    if user_id != "demo":
+        meals_query = {
+            "user_id": user_id,
+            "created_at": {"$gte": seven_days_ago}
+        }
+    else:
+        # Demo mode: show ALL meals from last 7 days (for testing)
+        meals_query = {
+            "created_at": {"$gte": seven_days_ago}
+        }
     
-    meals_cursor = db.meals.find(query_filter)
+    meals_cursor = db.meals.find(meals_query)
+    print(f"[DEBUG] Meals query: {meals_query}")
     
     total_calories = 0
     total_protein = 0
@@ -67,15 +74,22 @@ async def get_ai_insights(
     avg_daily_calories = total_calories / 7 if meal_count > 0 else 0
     avg_daily_protein = total_protein / 7 if meal_count > 0 else 0
     
-    # Aggregate workouts data - include both user's workouts and demo workouts
-    workouts_query = {
-        "$or": [
-            {"user_id": user_id},
-            {"user_id": "demo"}
-        ],
-        "date": {"$gte": seven_days_ago}
-    }
+    # Aggregate workouts data
+    # For development: if user is authenticated, show ONLY their data
+    # If not authenticated (demo), show all data for testing  
+    if user_id != "demo":
+        workouts_query = {
+            "user_id": user_id,
+            "date": {"$gte": seven_days_ago}
+        }
+    else:
+        # Demo mode: show ALL workouts (for testing)
+        workouts_query = {
+            "date": {"$gte": seven_days_ago}
+        }
+    
     workouts_cursor = db.workouts.find(workouts_query)
+    print(f"[DEBUG] Workouts query: {workouts_query}")
     
     workout_count = 0
     total_duration = 0
@@ -90,15 +104,20 @@ async def get_ai_insights(
     
     avg_workout_duration = total_duration / workout_count if workout_count > 0 else 0
     
-    # Get active goals - include both user's goals and demo goals
-    goals_query = {
-        "$or": [
-            {"user_id": user_id},
-            {"user_id": "demo"}
-        ],
-        "status": "active"
-    }
+    # Get active goals
+    if user_id != "demo":
+        goals_query = {
+            "user_id": user_id,
+            "status": "active"
+        }
+    else:
+        # Demo mode: show ALL active goals
+        goals_query = {
+            "status": "active"
+        }
+    
     goals_cursor = db.goals.find(goals_query)
+    print(f"[DEBUG] Goals query: {goals_query}")
     
     active_goals = []
     async for goal in goals_cursor:

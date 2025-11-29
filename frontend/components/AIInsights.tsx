@@ -60,14 +60,16 @@ export default function AIInsights({ onBack }: AIInsightsProps) {
       setLoading(true);
       setError(null);
       
-      // Try to get auth token if available, but don't require it
+      // Get auth token and user info
       let token: string | null = null;
+      let user: any = null;
       try {
         const { AuthService } = await import('../services/authService');
         token = await AuthService.getAuthToken();
+        user = await AuthService.getCurrentUser();
+        console.log('Auth status - Token:', token ? 'YES' : 'NO', 'User:', user);
       } catch (e) {
-        // No token, that's okay - we'll make unauthenticated request
-        console.log('No auth token, proceeding without authentication');
+        console.log('Auth error:', e);
       }
       
       const headers: HeadersInit = {
@@ -76,6 +78,9 @@ export default function AIInsights({ onBack }: AIInsightsProps) {
       
       if (token) {
         headers['Authorization'] = `Bearer ${token}`;
+        console.log('Sending request WITH auth token');
+      } else {
+        console.log('Sending request WITHOUT auth token (will use demo data)');
       }
       
       console.log('Fetching insights from:', `${API_BASE_URL}/insights/ai`);
