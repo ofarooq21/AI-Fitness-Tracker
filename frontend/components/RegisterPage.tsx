@@ -155,6 +155,11 @@ export default function RegisterPage({ onBackToLogin, onRegisterSuccess }: Regis
               {isLoading ? 'Creating Account...' : 'Create Account'}
             </Text>
           </TouchableOpacity>
+          {!isValid && !isLoading && (
+            <Text style={styles.hintText}>
+              Please fill in all fields correctly to enable the button
+            </Text>
+          )}
 
           <TouchableOpacity style={styles.backBottomButton} onPress={onBackToLogin}>
             <Text style={styles.backBottomButtonText}>Back</Text>
@@ -280,5 +285,12 @@ const styles = StyleSheet.create({
     color: '#374151',
     fontSize: 16,
     fontWeight: '600',
+  },
+  hintText: {
+    color: '#6B7280',
+    fontSize: 12,
+    textAlign: 'center',
+    marginTop: 8,
+    fontStyle: 'italic',
   },
 });
