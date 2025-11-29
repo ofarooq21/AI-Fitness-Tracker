@@ -36,6 +36,9 @@ async def create_workout(
     except CeleryError:
         # Non-fatal if queue is unavailable
         pass
+    
+    # Return workout with 'id' field (Pydantic expects 'id', not '_id')
+    workout_doc['id'] = workout_doc.pop('_id')
     return WorkoutOut(**workout_doc)
 
 @router.get("", response_model=List[WorkoutSummary])
