@@ -132,8 +132,18 @@ export default function GoalsList({ onBack, onCreateNew, successMessage, clearMe
                   </TouchableOpacity>
                 ) : (
                   <View style={styles.counterRow}>
-                    <TouchableOpacity style={styles.counterBtn} onPress={() => saveDailyTasks(updateCounterTask(tasks, t.id, -1))}><Text style={styles.counterBtnText}>-</Text></TouchableOpacity>
-                    <TouchableOpacity style={styles.counterBtn} onPress={() => saveDailyTasks(updateCounterTask(tasks, t.id, +1))}><Text style={styles.counterBtnText}>+</Text></TouchableOpacity>
+                    <TextInput
+                      style={styles.counterInput}
+                      value={String(t.value || 0)}
+                      onChangeText={(text) => {
+                        const newValue = parseInt(text) || 0;
+                        const updated = tasks.map(task => task.id === t.id ? { ...task, value: newValue } : task);
+                        saveDailyTasks(updated);
+                      }}
+                      keyboardType="numeric"
+                      placeholder="0"
+                    />
+                    <Text style={styles.counterTarget}>/ {t.target}</Text>
                   </View>
                 )}
               </View>
@@ -334,9 +344,25 @@ const styles = StyleSheet.create({
   },
   checkText: { color: '#1E3A8A', fontWeight: '700' },
   checkTextOn: { color: '#FFFFFF' },
-  counterRow: { flexDirection: 'row', gap: 8 },
-  counterBtn: { backgroundColor: '#2563EB', borderRadius: 8, paddingHorizontal: 12, paddingVertical: 6 },
-  counterBtnText: { color: '#FFFFFF', fontWeight: '700', fontSize: 16 },
+  counterRow: { flexDirection: 'row', alignItems: 'center', gap: 8 },
+  counterInput: {
+    backgroundColor: '#F8FAFF',
+    borderRadius: 8,
+    borderWidth: 1,
+    borderColor: '#E0E0E0',
+    paddingHorizontal: 12,
+    paddingVertical: 6,
+    fontSize: 16,
+    fontWeight: '600',
+    color: '#1E3A8A',
+    minWidth: 60,
+    textAlign: 'center',
+  },
+  counterTarget: {
+    fontSize: 16,
+    fontWeight: '600',
+    color: '#666',
+  },
   addRow: { flexDirection: 'row', gap: 8, marginTop: 8 },
   input: { backgroundColor: '#F8FAFF', borderRadius: 10, borderWidth: 1, borderColor: '#E0E0E0', paddingHorizontal: 12, paddingVertical: 10 },
   addInput: { flex: 1 },
