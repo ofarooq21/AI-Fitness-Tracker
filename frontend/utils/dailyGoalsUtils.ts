@@ -8,6 +8,7 @@ export interface DailyTask {
   unit?: string;   // for display e.g., cups, steps
   value?: number;  // current value for counter
   completed?: boolean; // for checkbox
+  isCustom?: boolean; // for custom tasks that can be deleted
 }
 
 export function computeDailyProgress(tasks: DailyTask[]): number {

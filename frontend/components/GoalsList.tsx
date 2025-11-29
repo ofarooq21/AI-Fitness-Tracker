@@ -3,6 +3,7 @@ import { View, Text, TouchableOpacity, FlatList, StyleSheet, SafeAreaView, TextI
 import { GoalsService, GoalOut } from '../services/goalsService';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { DailyTask, computeDailyProgress, ensureDefaults, toggleCheckboxTask, updateCounterTask } from '../utils/dailyGoalsUtils';
+import { showConfirm } from '../utils/webAlert';
 
 interface GoalsListProps {
   onBack: () => void;
@@ -65,9 +66,20 @@ export default function GoalsList({ onBack, onCreateNew, successMessage, clearMe
     const name = newTaskName.trim();
     const target = parseInt(newTaskTarget) || 0;
     if (!name || target <= 0) return;
-    const next: DailyTask[] = [...tasks, { id: `${Date.now()}`, name, type: 'counter', target, unit: newTaskUnit || undefined, value: 0 }];
+    const next: DailyTask[] = [...tasks, { id: `${Date.now()}`, name, type: 'counter', target, unit: newTaskUnit || undefined, value: 0, isCustom: true }];
     saveDailyTasks(next);
     setNewTaskName(''); setNewTaskTarget(''); setNewTaskUnit('');
+  };
+
+  const deleteTask = (taskId: string, taskName: string) => {
+    showConfirm(
+      'Delete Task',
+      `Are you sure you want to delete "${taskName}"?`,
+      async () => {
+        const updated = tasks.filter(t => t.id !== taskId);
+        await saveDailyTasks(updated);
+      }
+    );
   };
 
   return (
@@ -144,6 +156,14 @@ export default function GoalsList({ onBack, onCreateNew, successMessage, clearMe
                       placeholder="0"
                     />
                     <Text style={styles.counterTarget}>/ {t.target}</Text>
+                    {t.isCustom && (
+                      <TouchableOpacity 
+                        style={styles.deleteTaskButton} 
+                        onPress={() => deleteTask(t.id, t.name)}
+                      >
+                        <Text style={styles.deleteTaskButtonText}>×</Text>
+                      </TouchableOpacity>
+                    )}
                   </View>
                 )}
               </View>
@@ -362,6 +382,21 @@ const styles = StyleSheet.create({
     fontSize: 16,
     fontWeight: '600',
     color: '#666',
+  },
+  deleteTaskButton: {
+    width: 32,
+    height: 32,
+    borderRadius: 16,
+    backgroundColor: '#EF4444',
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginLeft: 4,
+  },
+  deleteTaskButtonText: {
+    color: '#FFFFFF',
+    fontSize: 24,
+    fontWeight: '600',
+    lineHeight: 24,
   },
   addRow: { flexDirection: 'row', gap: 8, marginTop: 8 },
   input: { backgroundColor: '#F8FAFF', borderRadius: 10, borderWidth: 1, borderColor: '#E0E0E0', paddingHorizontal: 12, paddingVertical: 10 },
