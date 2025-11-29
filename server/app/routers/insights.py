@@ -34,12 +34,13 @@ async def get_ai_insights(
     # Get data from last 7 days
     seven_days_ago = datetime.utcnow() - timedelta(days=7)
     
-    # Aggregate meals data - include both user's meals and demo meals as fallback
-    # This helps during development when user might have demo data
+    # Aggregate meals data - include user's meals, demo meals, AND meals without user_id
+    # This helps during development when user might have demo data or old test data
     query_filter = {
         "$or": [
             {"user_id": user_id},
-            {"user_id": "demo"}  # Include demo data as fallback
+            {"user_id": "demo"},
+            {"user_id": {"$exists": False}}  # Include meals without user_id (old data)
         ],
         "created_at": {"$gte": seven_days_ago}
     }

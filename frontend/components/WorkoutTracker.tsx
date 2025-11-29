@@ -443,6 +443,18 @@ export default function WorkoutTracker({ onBackToHome }: WorkoutTrackerProps) {
     );
   };
 
+  const deleteWorkout = (workoutId: string) => {
+    showConfirm(
+      'Delete Workout',
+      'Are you sure you want to delete this workout? This cannot be undone.',
+      () => {
+        const updated = workoutHistory.filter(w => w.id !== workoutId);
+        setWorkoutHistory(updated);
+        showAlert('Deleted', 'Workout has been removed');
+      }
+    );
+  };
+
   const getWorkoutDuration = () => {
     if (!startTime) return 0;
     const now = new Date();
@@ -490,8 +502,16 @@ export default function WorkoutTracker({ onBackToHome }: WorkoutTrackerProps) {
                 workoutHistory.map((workout) => (
                   <View key={workout.id} style={styles.workoutCard}>
                     <View style={styles.workoutHeader}>
-                      <Text style={styles.workoutName}>{workout.name}</Text>
-                      <Text style={styles.workoutDate}>{workout.date}</Text>
+                      <View style={{ flex: 1 }}>
+                        <Text style={styles.workoutName}>{workout.name}</Text>
+                        <Text style={styles.workoutDate}>{workout.date}</Text>
+                      </View>
+                      <TouchableOpacity
+                        style={styles.deleteWorkoutButton}
+                        onPress={() => deleteWorkout(workout.id)}
+                      >
+                        <Text style={styles.deleteWorkoutButtonText}>×</Text>
+                      </TouchableOpacity>
                     </View>
                     <View style={styles.workoutStats}>
                       <View style={styles.statItem}>
@@ -963,17 +983,33 @@ const styles = StyleSheet.create({
   workoutHeader: {
     flexDirection: 'row',
     justifyContent: 'space-between',
-    alignItems: 'center',
+    alignItems: 'flex-start',
     marginBottom: 12,
   },
   workoutName: {
     fontSize: 16,
     fontWeight: '600',
     color: '#333333',
+    marginBottom: 4,
   },
   workoutDate: {
     fontSize: 14,
     color: '#666666',
+  },
+  deleteWorkoutButton: {
+    width: 28,
+    height: 28,
+    borderRadius: 14,
+    backgroundColor: '#FF6B6B',
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginLeft: 8,
+  },
+  deleteWorkoutButtonText: {
+    color: '#FFFFFF',
+    fontSize: 20,
+    fontWeight: 'bold',
+    lineHeight: 20,
   },
   workoutStats: {
     flexDirection: 'row',
