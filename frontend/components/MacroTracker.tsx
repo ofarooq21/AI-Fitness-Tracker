@@ -118,11 +118,11 @@ export default function MacroTracker({ onBackToHome }: MacroTrackerProps) {
             meal_type: mealType,
             macros: {
               kcal: meal.calories,
-              protein_g: meal.protein,
-              carbs_g: meal.carbs,
-              fat_g: meal.fat
+              protein_g: parseFloat(meal.protein.toString()),
+              carbs_g: parseFloat(meal.carbs.toString()),
+              fat_g: parseFloat(meal.fat.toString())
             },
-            portion_size: 'medium',
+            portion_estimate_grams: 250, // Default portion size in grams
             confidence: 1.0,
             file_key: null
           };
