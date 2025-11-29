@@ -42,6 +42,7 @@ interface WorkoutSession {
   exercises: WorkoutExercise[];
   totalSets: number;
   totalVolume: number; // total weight lifted
+  backendId?: string; // Track backend workout ID for deletion
 }
 
 interface WorkoutTrackerProps {
@@ -260,7 +261,13 @@ export default function WorkoutTracker({ onBackToHome }: WorkoutTrackerProps) {
               throw new Error('Failed to save workout to server');
             }
             
-            errorLogger.logInfo('Workout saved to backend', { userId, workoutName: currentWorkout.name });
+            const savedWorkout = await response.json();
+            console.log('Workout saved to backend successfully:', savedWorkout);
+            
+            // Store backend ID in the workout for future deletion
+            updatedWorkout.backendId = savedWorkout.id;
+            
+            errorLogger.logInfo('Workout saved to backend', { userId, workoutName: currentWorkout.name, backendId: savedWorkout.id });
           } catch (error) {
             errorLogger.logError('Failed to save workout to backend', error as Error, { userId });
             // Continue anyway - local storage will persist
@@ -444,12 +451,44 @@ export default function WorkoutTracker({ onBackToHome }: WorkoutTrackerProps) {
   };
 
   const deleteWorkout = (workoutId: string) => {
+    const workoutToDelete = workoutHistory.find(w => w.id === workoutId);
+    
     showConfirm(
       'Delete Workout',
       'Are you sure you want to delete this workout? This cannot be undone.',
-      () => {
+      async () => {
+        // Remove from local state first for immediate UI feedback
         const updated = workoutHistory.filter(w => w.id !== workoutId);
         setWorkoutHistory(updated);
+        
+        // Delete from backend if we have a backend ID
+        if (userId && userId !== 'guest' && workoutToDelete?.backendId) {
+          try {
+            const token = await AuthService.getAuthToken();
+            const headers: HeadersInit = {
+              'Content-Type': 'application/json',
+            };
+            if (token) {
+              headers['Authorization'] = `Bearer ${token}`;
+            }
+
+            const response = await fetch(`http://localhost:8000/workouts/${workoutToDelete.backendId}`, {
+              method: 'DELETE',
+              headers
+            });
+
+            if (response.ok || response.status === 204) {
+              console.log('Workout deleted from backend successfully');
+              errorLogger.logInfo('Workout deleted from backend', { userId, backendId: workoutToDelete.backendId });
+            } else {
+              console.error('Failed to delete workout from backend:', response.status);
+            }
+          } catch (error) {
+            console.error('Error deleting workout from backend:', error);
+            errorLogger.logError('Failed to delete workout from backend', error as Error, { userId });
+          }
+        }
+        
         showAlert('Deleted', 'Workout has been removed');
       }
     );

@@ -32,6 +32,7 @@ interface Meal {
   fat: number;
   carbs: number;
   time: string;
+  backendId?: string; // Track backend meal ID for deletion
 }
 
 interface MacroGoal {
@@ -141,7 +142,11 @@ export default function MacroTracker({ onBackToHome }: MacroTrackerProps) {
           
           const savedMeal = await response.json();
           console.log('Meal saved to backend successfully:', savedMeal);
-          errorLogger.logInfo('Meal saved to backend', { userId, mealName: meal.name });
+          
+          // Store backend ID for future deletion
+          meal.backendId = savedMeal.id;
+          
+          errorLogger.logInfo('Meal saved to backend', { userId, mealName: meal.name, backendId: savedMeal.id });
         } catch (error) {
           console.error('Error saving meal to backend:', error);
           errorLogger.logError('Failed to save meal to backend', error as Error, { userId });
@@ -237,11 +242,44 @@ export default function MacroTracker({ onBackToHome }: MacroTrackerProps) {
     setShowAddMeal(false);
   };
 
-  const deleteMeal = (id: string) => {
+  const deleteMeal = async (id: string) => {
+    const mealToDelete = meals.find(m => m.id === id);
+    
     showConfirm(
       'Delete Meal',
       'Are you sure you want to delete this meal?',
-      () => setMeals(meals.filter(meal => meal.id !== id))
+      async () => {
+        // Remove from local state first for immediate UI feedback
+        setMeals(meals.filter(meal => meal.id !== id));
+        
+        // Delete from backend if we have a backend ID
+        if (userId && userId !== 'guest' && mealToDelete?.backendId) {
+          try {
+            const token = await AuthService.getAuthToken();
+            const headers: HeadersInit = {
+              'Content-Type': 'application/json',
+            };
+            if (token) {
+              headers['Authorization'] = `Bearer ${token}`;
+            }
+
+            const response = await fetch(`http://localhost:8000/meals/${mealToDelete.backendId}`, {
+              method: 'DELETE',
+              headers
+            });
+
+            if (response.ok) {
+              console.log('Meal deleted from backend successfully');
+              errorLogger.logInfo('Meal deleted from backend', { userId, backendId: mealToDelete.backendId });
+            } else {
+              console.error('Failed to delete meal from backend:', response.status);
+            }
+          } catch (error) {
+            console.error('Error deleting meal from backend:', error);
+            errorLogger.logError('Failed to delete meal from backend', error as Error, { userId });
+          }
+        }
+      }
     );
   };
 
