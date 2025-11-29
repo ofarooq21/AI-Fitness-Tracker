@@ -33,6 +33,7 @@ interface InsightsData {
       avg_daily: number;
       avg_daily_calories: number;
       avg_daily_protein_g: number;
+      today_count?: number; // Meals logged today
     };
     workouts: {
       total: number;
@@ -245,11 +246,11 @@ export default function AIInsights({ onBack }: AIInsightsProps) {
               <View style={styles.statCard}>
                 <Text style={styles.statIcon}>🍽️</Text>
                 <Text style={styles.statValue}>
-                  {Math.round(insights.data_summary.meals.avg_daily)} / 3
+                  {insights.data_summary.meals.today_count ?? insights.data_summary.meals.total} / 3
                 </Text>
-                <Text style={styles.statLabel}>Meals Logged</Text>
+                <Text style={styles.statLabel}>Meals Today</Text>
                 <Text style={styles.statSubtext}>
-                  {insights.data_summary.meals.avg_daily.toFixed(1)} per day
+                  {insights.data_summary.meals.total} total this week
                 </Text>
               </View>
               <View style={styles.statCard}>

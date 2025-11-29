@@ -59,7 +59,12 @@ async def get_ai_insights(
     total_carbs = 0
     total_fat = 0
     meal_count = 0
+    today_meal_count = 0
     meals_by_type = {"breakfast": 0, "lunch": 0, "dinner": 0, "snack": 0}
+    
+    # Get today's date range (start of today in UTC)
+    from datetime import datetime, timedelta
+    today_start = datetime.utcnow().replace(hour=0, minute=0, second=0, microsecond=0)
     
     async for meal in meals_cursor:
         macros = meal.get("macros", {})
@@ -68,6 +73,12 @@ async def get_ai_insights(
         total_carbs += macros.get("carbs_g", 0)
         total_fat += macros.get("fat_g", 0)
         meal_count += 1
+        
+        # Count meals from today
+        meal_created_at = meal.get("created_at")
+        if meal_created_at and meal_created_at >= today_start:
+            today_meal_count += 1
+        
         meal_type = meal.get("meal_type", "snack")
         meals_by_type[meal_type] = meals_by_type.get(meal_type, 0) + 1
     
@@ -132,6 +143,7 @@ async def get_ai_insights(
         "meals": {
             "total": meal_count,
             "avg_daily": round(meal_count / 7, 1) if meal_count > 0 else 0,
+            "today_count": today_meal_count,
             "by_type": meals_by_type,
             "avg_daily_calories": round(avg_daily_calories, 0),
             "avg_daily_protein_g": round(avg_daily_protein, 1)
