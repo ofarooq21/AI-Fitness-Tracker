@@ -7,12 +7,12 @@ import {
   TouchableOpacity, 
   SafeAreaView, 
   ScrollView,
-  Alert,
   Modal
 } from 'react-native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { AuthService } from '../services/authService';
 import { errorLogger, withErrorHandling } from '../services/errorLogger';
+import { showAlert, showConfirm } from '../utils/webAlert';
 import { 
   getTotalCalories as utilsTotalCalories,
   getTotalProtein as utilsTotalProtein,
@@ -79,7 +79,7 @@ export default function MacroTracker({ onBackToHome }: MacroTrackerProps) {
     const errors = validateMealDraft(newMeal as any);
     if (errors.length) {
       errorLogger.logWarning('Meal validation failed', { errors, newMeal });
-      Alert.alert('Error', errors[0]);
+      showAlert('Error', errors[0]);
       return;
     }
 
@@ -150,7 +150,7 @@ export default function MacroTracker({ onBackToHome }: MacroTrackerProps) {
       errorLogger.logInfo('Meal added successfully', { userId, mealName: meal.name, selectedDate });
     } catch (error) {
       errorLogger.logError('Failed to add meal', error as Error, { userId, newMeal });
-      Alert.alert('Error', 'Failed to add meal. Please try again.');
+      showAlert('Error', 'Failed to add meal. Please try again.');
     }
   };
 
@@ -213,7 +213,7 @@ export default function MacroTracker({ onBackToHome }: MacroTrackerProps) {
   const saveEditMeal = () => {
     const errors = validateMealDraft(newMeal as any);
     if (errors.length) {
-      Alert.alert('Error', errors[0]);
+      showAlert('Error', errors[0]);
       return;
     }
     if (!editingMealId) return;
@@ -232,17 +232,10 @@ export default function MacroTracker({ onBackToHome }: MacroTrackerProps) {
   };
 
   const deleteMeal = (id: string) => {
-    Alert.alert(
+    showConfirm(
       'Delete Meal',
       'Are you sure you want to delete this meal?',
-      [
-        { text: 'Cancel', style: 'cancel' },
-        { 
-          text: 'Delete', 
-          style: 'destructive',
-          onPress: () => setMeals(meals.filter(meal => meal.id !== id))
-        }
-      ]
+      () => setMeals(meals.filter(meal => meal.id !== id))
     );
   };
 
@@ -264,7 +257,7 @@ export default function MacroTracker({ onBackToHome }: MacroTrackerProps) {
 
   const addGoal = () => {
     if (!newGoal.calories || !newGoal.protein || !newGoal.fat || !newGoal.carbs || !newGoal.duration) {
-      Alert.alert('Error', 'Please fill in all goal fields');
+      showAlert('Error', 'Please fill in all goal fields');
       return;
     }
 
@@ -287,24 +280,17 @@ export default function MacroTracker({ onBackToHome }: MacroTrackerProps) {
     setCurrentGoal(goal);
     setNewGoal({ calories: '', protein: '', fat: '', carbs: '', duration: '30' });
     setShowGoalModal(false);
-    Alert.alert('Success', 'Goal set successfully!');
+    showAlert('Success', 'Goal set successfully!');
   };
 
   const clearGoal = () => {
-    Alert.alert(
+    showConfirm(
       'Clear Goal',
       'Are you sure you want to clear your current goal?',
-      [
-        { text: 'Cancel', style: 'cancel' },
-        { 
-          text: 'Clear', 
-          style: 'destructive',
-          onPress: () => {
-            setCurrentGoal(null);
-            Alert.alert('Goal Cleared', 'Your goal has been cleared.');
-          }
-        }
-      ]
+      () => {
+        setCurrentGoal(null);
+        showAlert('Goal Cleared', 'Your goal has been cleared.');
+      }
     );
   };
 
@@ -350,10 +336,7 @@ export default function MacroTracker({ onBackToHome }: MacroTrackerProps) {
               <TouchableOpacity 
                 style={styles.clearDayButton}
                 onPress={() => {
-                  Alert.alert('Clear Day', 'Remove all meals for this day?', [
-                    { text: 'Cancel', style: 'cancel' },
-                    { text: 'Clear', style: 'destructive', onPress: () => setMeals([]) },
-                  ]);
+                  showConfirm('Clear Day', 'Remove all meals for this day?', () => setMeals([]));
                 }}
               >
                 <Text style={styles.clearDayButtonText}>Clear Day</Text>

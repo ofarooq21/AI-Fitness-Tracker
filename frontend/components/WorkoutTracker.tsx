@@ -6,13 +6,13 @@ import {
   TextInput, 
   TouchableOpacity, 
   SafeAreaView, 
-  ScrollView, 
-  Alert,
+  ScrollView,
   Modal
 } from 'react-native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { AuthService } from '../services/authService';
 import { errorLogger, withErrorHandling } from '../services/errorLogger';
+import { showAlert, showConfirm } from '../utils/webAlert';
 
 interface Exercise {
   id: string;
@@ -171,7 +171,7 @@ export default function WorkoutTracker({ onBackToHome }: WorkoutTrackerProps) {
 
   const startNewWorkout = () => {
     if (!workoutName.trim()) {
-      Alert.alert('Error', 'Please enter a workout name');
+      showAlert('Error', 'Please enter a workout name');
       return;
     }
 
@@ -279,7 +279,7 @@ export default function WorkoutTracker({ onBackToHome }: WorkoutTrackerProps) {
     
     setCurrentWorkout(null);
     setStartTime(null);
-    Alert.alert('Success', `Workout completed! Duration: ${duration} minutes`);
+    showAlert('Success', `Workout completed! Duration: ${duration} minutes`);
     errorLogger.logInfo('Workout completed', { userId, workoutName: currentWorkout.name, duration });
   };
 
@@ -433,20 +433,13 @@ export default function WorkoutTracker({ onBackToHome }: WorkoutTrackerProps) {
   const removeExercise = (exerciseId: string) => {
     if (!currentWorkout) return;
 
-    Alert.alert(
+    showConfirm(
       'Remove Exercise',
       'Are you sure you want to remove this exercise?',
-      [
-        { text: 'Cancel', style: 'cancel' },
-        {
-          text: 'Remove',
-          style: 'destructive',
-          onPress: () => {
-            const updatedExercises = currentWorkout.exercises.filter(ex => ex.id !== exerciseId);
-            setCurrentWorkout({ ...currentWorkout, exercises: updatedExercises });
-          }
-        }
-      ]
+      () => {
+        const updatedExercises = currentWorkout.exercises.filter(ex => ex.id !== exerciseId);
+        setCurrentWorkout({ ...currentWorkout, exercises: updatedExercises });
+      }
     );
   };
 
