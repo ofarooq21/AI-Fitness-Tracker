@@ -42,6 +42,8 @@ interface InsightsData {
     };
     goals: {
       active_count: number;
+      daily_tasks_count?: number; // Daily custom counter tasks
+      long_term_count?: number; // Long-term goals
     };
   };
 }
@@ -73,6 +75,23 @@ export default function AIInsights({ onBack }: AIInsightsProps) {
         console.log('Auth error:', e);
       }
       
+      // Get daily tasks from localStorage
+      let dailyTasksCount = 0;
+      try {
+        const AsyncStorage = await import('@react-native-async-storage/async-storage').then(m => m.default);
+        const today = new Date().toISOString().split('T')[0];
+        const storageKey = `daily_goals_tasks_${today}`;
+        const tasksJson = await AsyncStorage.getItem(storageKey);
+        if (tasksJson) {
+          const tasks = JSON.parse(tasksJson);
+          // Count custom tasks (tasks with isCustom flag)
+          dailyTasksCount = tasks.filter((t: any) => t.isCustom === true).length;
+          console.log('Daily custom tasks count:', dailyTasksCount);
+        }
+      } catch (e) {
+        console.log('Could not load daily tasks:', e);
+      }
+      
       const headers: HeadersInit = {
         'Content-Type': 'application/json',
       };
@@ -99,6 +118,15 @@ export default function AIInsights({ onBack }: AIInsightsProps) {
       }
 
       const data = await response.json();
+      
+      // Add daily tasks count to the response
+      if (data.data_summary && data.data_summary.goals) {
+        data.data_summary.goals.daily_tasks_count = dailyTasksCount;
+        data.data_summary.goals.long_term_count = data.data_summary.goals.active_count;
+        // Update active_count to include both long-term and daily tasks
+        data.data_summary.goals.active_count = data.data_summary.goals.long_term_count + dailyTasksCount;
+      }
+      
       setInsights(data);
     } catch (error: any) {
       console.error('Error loading insights:', error);
@@ -268,7 +296,7 @@ export default function AIInsights({ onBack }: AIInsightsProps) {
                 <Text style={styles.statValue}>{insights.data_summary.goals.active_count}</Text>
                 <Text style={styles.statLabel}>Active Goals</Text>
                 <Text style={styles.statSubtext}>
-                  {insights.data_summary.goals.active_count === 0 ? 'Set a goal to start' : 'In progress'}
+                  {insights.data_summary.goals.long_term_count || 0} long-term, {insights.data_summary.goals.daily_tasks_count || 0} daily
                 </Text>
               </View>
             </View>
