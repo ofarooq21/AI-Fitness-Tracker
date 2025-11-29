@@ -8,6 +8,7 @@ from app.routers.meals import router as meals_router
 from app.routers.users import router as users_router
 from app.routers.workouts import router as workouts_router
 from app.routers.goals import router as goals_router
+from app.routers.insights import router as insights_router
 from app.infra.db import lifespan
 
 # Create FastAPI app with proper metadata
@@ -43,6 +44,7 @@ app.include_router(meals_router)
 app.include_router(users_router)
 app.include_router(workouts_router)
 app.include_router(goals_router)
+app.include_router(insights_router)
 
 @app.get("/")
 async def root():
