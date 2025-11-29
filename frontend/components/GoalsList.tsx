@@ -84,8 +84,7 @@ export default function GoalsList({ onBack }: GoalsListProps) {
       </View>
 
       <View style={styles.dailyWrap}>
-        <View style={styles.dailyWrap}>
-          <View style={styles.dateRow}>
+        <View style={styles.dateRow}>
             <Text style={styles.inputLabel}>Date</Text>
             <TextInput style={styles.dateInput} value={selectedDate} onChangeText={setSelectedDate} />
           </View>
@@ -148,7 +147,7 @@ export default function GoalsList({ onBack }: GoalsListProps) {
             <TextInput placeholder="Target" placeholderTextColor="#94A3B8" style={[styles.input, styles.addInput]} value={newTaskTarget} onChangeText={setNewTaskTarget} keyboardType="numeric" />
             <TextInput placeholder="Unit" placeholderTextColor="#94A3B8" style={[styles.input, styles.addInput]} value={newTaskUnit} onChangeText={setNewTaskUnit} />
           </View>
-          <TouchableOpacity style={styles.addButton} onPress={addCounterTask}><Text style={styles.addButtonText}>Add Task</Text></TouchableOpacity>
+        <TouchableOpacity style={styles.addButton} onPress={addCounterTask}><Text style={styles.addButtonText}>Add Task</Text></TouchableOpacity>
       </View>
     </SafeAreaView>
   );
