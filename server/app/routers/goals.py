@@ -29,6 +29,8 @@ async def create_goal(
     
     await db.goals.insert_one(goal_doc)
     
+    # Return goal with 'id' field (Pydantic expects 'id', not '_id')
+    goal_doc['id'] = goal_doc.pop('_id')
     return GoalOut(**goal_doc)
 
 @router.get("", response_model=List[GoalOut])
@@ -55,6 +57,8 @@ async def list_goals(
     
     goals = []
     async for doc in cursor:
+        # Convert '_id' to 'id' for Pydantic
+        doc['id'] = doc.pop('_id')
         goals.append(GoalOut(**doc))
     
     return goals
@@ -73,6 +77,8 @@ async def get_goal(
             detail="Goal not found"
         )
     
+    # Convert '_id' to 'id' for Pydantic
+    goal['id'] = goal.pop('_id')
     return GoalOut(**goal)
 
 @router.put("/{goal_id}", response_model=GoalOut)
@@ -102,6 +108,8 @@ async def update_goal(
     
     # Return updated goal
     updated_goal = await db.goals.find_one({"_id": goal_id})
+    # Convert '_id' to 'id' for Pydantic
+    updated_goal['id'] = updated_goal.pop('_id')
     return GoalOut(**updated_goal)
 
 @router.delete("/{goal_id}", status_code=status.HTTP_204_NO_CONTENT)
