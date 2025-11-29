@@ -63,7 +63,6 @@ async def get_ai_insights(
     meals_by_type = {"breakfast": 0, "lunch": 0, "dinner": 0, "snack": 0}
     
     # Get today's date range (start of today in UTC)
-    from datetime import datetime, timedelta
     today_start = datetime.utcnow().replace(hour=0, minute=0, second=0, microsecond=0)
     
     async for meal in meals_cursor:
