@@ -9,10 +9,11 @@ import MacroTracker from './components/MacroTracker';
 import WorkoutTracker from './components/WorkoutTracker';
 import GoalForm from './components/GoalForm';
 import GoalsList from './components/GoalsList';
+import AIInsights from './components/AIInsights';
 import { AuthService, User } from './services/authService';
 
 export default function App() {
-  type Page = 'home' | 'login' | 'register' | 'dashboard' | 'macro' | 'workout' | 'goalsForm' | 'goalsList';
+  type Page = 'home' | 'login' | 'register' | 'dashboard' | 'macro' | 'workout' | 'goalsForm' | 'goalsList' | 'aiInsights';
 
   const [currentPage, setCurrentPage] = useState<Page>('home');
   const [currentUser, setCurrentUser] = useState<User | null>(null);
@@ -73,6 +74,10 @@ export default function App() {
   const showWorkoutPage = () => navigate('workout');
   const showGoalsForm = () => navigate('goalsForm');
   const showGoalsList = () => navigate('goalsList');
+  const showAIInsights = () => {
+    console.log('showAIInsights called, navigating to aiInsights');
+    navigate('aiInsights');
+  };
 
   // Auth handlers
   const handleLoginSuccess = (user: User) => {
@@ -102,6 +107,7 @@ export default function App() {
       case 'workout': return '#/workout';
       case 'goalsForm': return '#/goals/new';
       case 'goalsList': return '#/goals';
+      case 'aiInsights': return '#/ai-insights';
     }
   }
 
@@ -114,6 +120,7 @@ export default function App() {
     if (hash.startsWith('#/workout')) return 'workout';
     if (hash.startsWith('#/goals/new')) return 'goalsForm';
     if (hash.startsWith('#/goals')) return 'goalsList';
+    if (hash.startsWith('#/ai-insights')) return 'aiInsights';
     if (hash === '#/' || hash === '#') return 'home';
     return 'home';
   }
@@ -158,6 +165,7 @@ export default function App() {
         onShowMacroTracker={showMacroTracker}
         onShowWorkoutTracker={showWorkoutPage}
         onShowGoals={showGoalsList}
+        onShowAIInsights={showAIInsights}
       />
     );
   }
@@ -196,6 +204,11 @@ export default function App() {
         clearMessage={() => setGoalsSuccessMessage(null)}
       />
     );
+  }
+
+  if (currentPage === 'aiInsights') {
+    const goBackTo = currentUser ? showDashboard : showHomePage;
+    return <AIInsights onBack={goBackTo} />;
   }
 
   // Home / Landing
@@ -240,10 +253,10 @@ export default function App() {
                 <Text style={styles.featureIcon}>🎯</Text>
                 <Text style={styles.featureText}>Goal Management</Text>
               </TouchableOpacity>
-              <View style={styles.featureItem}>
+              <TouchableOpacity style={styles.featureItem} onPress={showAIInsights}>
                 <Text style={styles.featureIcon}>🤖</Text>
                 <Text style={styles.featureText}>AI Insights</Text>
-              </View>
+              </TouchableOpacity>
             </View>
           </View>
         </View>

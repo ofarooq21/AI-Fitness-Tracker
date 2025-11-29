@@ -8,13 +8,19 @@ interface DashboardProps {
   onShowMacroTracker: () => void;
   onShowWorkoutTracker: () => void;
   onShowGoals: () => void;
+  onShowAIInsights: () => void;
 }
 
-export default function Dashboard({ onLogout, onShowMacroTracker, onShowWorkoutTracker, onShowGoals }: DashboardProps) {
+export default function Dashboard({ onLogout, onShowMacroTracker, onShowWorkoutTracker, onShowGoals, onShowAIInsights }: DashboardProps) {
   const [user, setUser] = useState<User | null>(null);
   const [userCount, setUserCount] = useState(0);
   const [todayMeals, setTodayMeals] = useState(0);
   const [lastWorkout, setLastWorkout] = useState<{ name: string; date: string } | null>(null);
+
+  // Debug: Check if onShowAIInsights is defined
+  useEffect(() => {
+    console.log('Dashboard mounted, onShowAIInsights:', typeof onShowAIInsights);
+  }, [onShowAIInsights]);
 
   useEffect(() => {
     loadUserData();
@@ -134,6 +140,18 @@ export default function Dashboard({ onLogout, onShowMacroTracker, onShowWorkoutT
             <View style={styles.actionContent}>
               <Text style={styles.tileTitle}>Goals</Text>
               <Text style={styles.tileSub}>Set and track goals</Text>
+            </View>
+          </TouchableOpacity>
+          <TouchableOpacity 
+            style={styles.tile} 
+            onPress={onShowAIInsights}
+            activeOpacity={0.7}
+            testID="ai-insights-button"
+          >
+            <Text style={styles.tileIcon}>🤖</Text>
+            <View style={styles.actionContent}>
+              <Text style={styles.tileTitle}>AI Insights</Text>
+              <Text style={styles.tileSub}>Get personalized insights</Text>
             </View>
           </TouchableOpacity>
         </View>
@@ -284,6 +302,7 @@ const styles = StyleSheet.create({
     elevation: 3,
     borderWidth: 1,
     borderColor: '#E5EAF5',
+    minHeight: 120,
   },
   tileIcon: {
     fontSize: 24,

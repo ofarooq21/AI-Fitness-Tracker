@@ -20,6 +20,7 @@ services:
       - JWT_SECRET_KEY=your-secret-key-change-in-production
       - JWT_ALGORITHM=HS256
       - JWT_ACCESS_TOKEN_EXPIRE_MINUTES=30
+      - OPENAI_API_KEY=${OPENAI_API_KEY:-REPLACE_ME}
     ports:
       - "8000:8000"
     depends_on:
@@ -47,6 +48,7 @@ services:
       - JWT_SECRET_KEY=your-secret-key-change-in-production
       - JWT_ALGORITHM=HS256
       - JWT_ACCESS_TOKEN_EXPIRE_MINUTES=30
+      - OPENAI_API_KEY=${OPENAI_API_KEY:-REPLACE_ME}
     command: celery -A celery_app.celery_app worker --loglevel=INFO
     depends_on:
       - redis

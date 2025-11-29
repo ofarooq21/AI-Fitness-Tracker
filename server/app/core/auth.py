@@ -69,7 +69,7 @@ async def get_current_user(credentials: HTTPAuthorizationCredentials = Depends(s
     
     return {"email": token_data.email, "user_id": str(user["_id"])}
 
-async def get_current_user_optional(credentials: Optional[HTTPAuthorizationCredentials] = Depends(security)):
+async def get_current_user_optional(credentials: Optional[HTTPAuthorizationCredentials] = Depends(HTTPBearer(auto_error=False))):
     """Get the current user if authenticated, otherwise return None."""
     if credentials is None:
         return None
