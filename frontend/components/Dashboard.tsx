@@ -7,12 +7,11 @@ interface DashboardProps {
   onLogout: () => void;
   onShowMacroTracker: () => void;
   onShowWorkoutTracker: () => void;
-  onShowGoals: () => void;
   onShowAIInsights: () => void;
   onShowSettings: () => void;
 }
 
-export default function Dashboard({ onLogout, onShowMacroTracker, onShowWorkoutTracker, onShowGoals, onShowAIInsights, onShowSettings }: DashboardProps) {
+export default function Dashboard({ onLogout, onShowMacroTracker, onShowWorkoutTracker, onShowAIInsights, onShowSettings }: DashboardProps) {
   const [user, setUser] = useState<User | null>(null);
   const [userCount, setUserCount] = useState(0);
   const [todayMeals, setTodayMeals] = useState(0);
@@ -148,13 +147,6 @@ export default function Dashboard({ onLogout, onShowMacroTracker, onShowWorkoutT
             <View style={styles.actionContent}>
               <Text style={styles.tileTitle}>Workout Tracker</Text>
               <Text style={styles.tileSub}>Log your exercises</Text>
-            </View>
-          </TouchableOpacity>
-          <TouchableOpacity style={styles.tile} onPress={onShowGoals}>
-            <Text style={styles.tileIcon}>🎯</Text>
-            <View style={styles.actionContent}>
-              <Text style={styles.tileTitle}>Goals</Text>
-              <Text style={styles.tileSub}>Set and track goals</Text>
             </View>
           </TouchableOpacity>
           <TouchableOpacity

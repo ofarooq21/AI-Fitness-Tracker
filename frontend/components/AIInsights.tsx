@@ -41,9 +41,7 @@ interface InsightsData {
       avg_duration_minutes: number;
     };
     goals: {
-      active_count: number;
-      daily_tasks_count?: number; // Daily custom counter tasks
-      long_term_count?: number; // Long-term goals
+      active_count: number; // Total daily custom counter tasks
     };
   };
 }
@@ -119,12 +117,9 @@ export default function AIInsights({ onBack }: AIInsightsProps) {
 
       const data = await response.json();
       
-      // Add daily tasks count to the response
+      // Add daily tasks count to the response (only daily custom tasks, no long-term goals)
       if (data.data_summary && data.data_summary.goals) {
-        data.data_summary.goals.daily_tasks_count = dailyTasksCount;
-        data.data_summary.goals.long_term_count = data.data_summary.goals.active_count;
-        // Update active_count to include both long-term and daily tasks
-        data.data_summary.goals.active_count = data.data_summary.goals.long_term_count + dailyTasksCount;
+        data.data_summary.goals.active_count = dailyTasksCount;
       }
       
       setInsights(data);
@@ -294,9 +289,9 @@ export default function AIInsights({ onBack }: AIInsightsProps) {
               <View style={styles.statCard}>
                 <Text style={styles.statIcon}>🎯</Text>
                 <Text style={styles.statValue}>{insights.data_summary.goals.active_count}</Text>
-                <Text style={styles.statLabel}>Active Goals</Text>
+                <Text style={styles.statLabel}>Daily Custom Tasks</Text>
                 <Text style={styles.statSubtext}>
-                  {insights.data_summary.goals.long_term_count || 0} long-term, {insights.data_summary.goals.daily_tasks_count || 0} daily
+                  {insights.data_summary.goals.active_count === 0 ? 'Add a task to start' : 'Custom counter tasks'}
                 </Text>
               </View>
             </View>
