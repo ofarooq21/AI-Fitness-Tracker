@@ -245,7 +245,7 @@ export default function AIInsights({ onBack }: AIInsightsProps) {
               <View style={styles.statCard}>
                 <Text style={styles.statIcon}>🍽️</Text>
                 <Text style={styles.statValue}>
-                  {insights.data_summary.meals.total} / {insights.data_summary.days_analyzed * 3}
+                  {Math.round(insights.data_summary.meals.avg_daily)} / 3
                 </Text>
                 <Text style={styles.statLabel}>Meals Logged</Text>
                 <Text style={styles.statSubtext}>
