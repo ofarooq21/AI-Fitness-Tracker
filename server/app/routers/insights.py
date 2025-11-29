@@ -115,14 +115,17 @@ async def get_ai_insights(
     avg_workout_duration = total_duration / workout_count if workout_count > 0 else 0
     
     # Get active goals
+    # Always filter by user_id to show only user's goals
+    # If demo mode and user has no goals, show 0 instead of all goals
     if user_id != "demo":
         goals_query = {
             "user_id": user_id,
             "status": "active"
         }
     else:
-        # Demo mode: show ALL active goals
+        # Demo mode: show only demo user's goals (not ALL goals)
         goals_query = {
+            "user_id": "demo",
             "status": "active"
         }
     
