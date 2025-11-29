@@ -37,7 +37,21 @@ export default function GoalsList({ onBack, onCreateNew, successMessage, clearMe
     try {
       const json = await AsyncStorage.getItem(storageKey(selectedDate));
       const arr: DailyTask[] | null = json ? JSON.parse(json) : null;
-      setTasks(ensureDefaults(arr || undefined));
+      
+      // Mark old custom tasks that don't have isCustom flag
+      // Default tasks have specific IDs: water, steps, protein, workout
+      const defaultIds = ['water', 'steps', 'protein', 'workout'];
+      const markedTasks = arr?.map(t => ({
+        ...t,
+        isCustom: t.isCustom !== undefined ? t.isCustom : !defaultIds.includes(t.id)
+      })) || undefined;
+      
+      setTasks(ensureDefaults(markedTasks));
+      
+      // Save back with isCustom flags
+      if (markedTasks && markedTasks.length > 0) {
+        await AsyncStorage.setItem(storageKey(selectedDate), JSON.stringify(markedTasks));
+      }
     } catch (e) {
       setTasks(ensureDefaults(undefined));
     }
