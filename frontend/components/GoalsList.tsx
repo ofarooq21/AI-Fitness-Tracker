@@ -7,25 +7,14 @@ import { showConfirm } from '../utils/webAlert';
 
 interface GoalsListProps {
   onBack: () => void;
-  onCreateNew: () => void;
-  successMessage?: string | null;
-  clearMessage?: () => void;
 }
 
-export default function GoalsList({ onBack, onCreateNew, successMessage, clearMessage }: GoalsListProps) {
-  const [goals, setGoals] = useState<GoalOut[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
-  const [tab, setTab] = useState<'daily' | 'long'>('daily');
+export default function GoalsList({ onBack }: GoalsListProps) {
   const [selectedDate, setSelectedDate] = useState(new Date().toISOString().split('T')[0]);
   const [tasks, setTasks] = useState<DailyTask[]>([]);
   const [newTaskName, setNewTaskName] = useState('');
   const [newTaskTarget, setNewTaskTarget] = useState('');
   const [newTaskUnit, setNewTaskUnit] = useState('');
-
-  useEffect(() => {
-    loadGoals();
-  }, []);
 
   useEffect(() => {
     loadDailyTasks();
@@ -62,18 +51,6 @@ export default function GoalsList({ onBack, onCreateNew, successMessage, clearMe
     await AsyncStorage.setItem(storageKey(selectedDate), JSON.stringify(next));
   };
 
-  const loadGoals = async () => {
-    try {
-      setLoading(true);
-      const data = await GoalsService.listGoals();
-      setGoals(data);
-    } catch (e: any) {
-      setError(e?.message || 'Failed to load goals');
-    } finally {
-      setLoading(false);
-    }
-  };
-
   const pct = useMemo(() => computeDailyProgress(tasks), [tasks]);
 
   const addCounterTask = () => {
@@ -100,33 +77,13 @@ export default function GoalsList({ onBack, onCreateNew, successMessage, clearMe
     <SafeAreaView style={styles.container}>
       <View style={styles.header}>
         <TouchableOpacity onPress={onBack} style={styles.backButton}>
-          <Text style={styles.backButtonText}>Back</Text>
+          <Text style={styles.backButtonText}>← Back</Text>
         </TouchableOpacity>
-        <Text style={styles.title}>Your Goals</Text>
-        <TouchableOpacity onPress={onCreateNew} style={styles.createButton}>
-          <Text style={styles.createButtonText}>+ New</Text>
-        </TouchableOpacity>
+        <Text style={styles.title}>Daily Goals</Text>
+        <View style={{ width: 64 }} />
       </View>
 
-      {/* Tabs */}
-      <View style={styles.tabs}>
-        <TouchableOpacity style={[styles.tabItem, tab === 'daily' && styles.tabItemActive]} onPress={() => setTab('daily')}>
-          <Text style={[styles.tabText, tab === 'daily' && styles.tabTextActive]}>Daily</Text>
-        </TouchableOpacity>
-        <TouchableOpacity style={[styles.tabItem, tab === 'long' && styles.tabItemActive]} onPress={() => setTab('long')}>
-          <Text style={[styles.tabText, tab === 'long' && styles.tabTextActive]}>Long-term</Text>
-        </TouchableOpacity>
-      </View>
-
-      {successMessage ? (
-        <TouchableOpacity style={styles.successBanner} onPress={clearMessage}>
-          <Text style={styles.successText}>{successMessage}</Text>
-        </TouchableOpacity>
-      ) : null}
-
-      {error && <Text style={styles.errorText}>{error}</Text>}
-
-      {tab === 'daily' ? (
+      <View style={styles.dailyWrap}>
         <View style={styles.dailyWrap}>
           <View style={styles.dateRow}>
             <Text style={styles.inputLabel}>Date</Text>
@@ -192,37 +149,7 @@ export default function GoalsList({ onBack, onCreateNew, successMessage, clearMe
             <TextInput placeholder="Unit" placeholderTextColor="#94A3B8" style={[styles.input, styles.addInput]} value={newTaskUnit} onChangeText={setNewTaskUnit} />
           </View>
           <TouchableOpacity style={styles.addButton} onPress={addCounterTask}><Text style={styles.addButtonText}>Add Task</Text></TouchableOpacity>
-        </View>
-      ) : (
-        loading ? (
-          <View style={styles.loadingContainer}>
-            <Text style={styles.loadingText}>Loading goals...</Text>
-          </View>
-        ) : (
-          <FlatList
-            data={goals}
-            keyExtractor={(item) => item.id}
-            contentContainerStyle={styles.listContent}
-            renderItem={({ item }) => (
-              <View style={styles.goalItem}>
-                <View style={{ flex: 1 }}>
-                  <Text style={styles.goalTitle}>{item.title}</Text>
-                  <Text style={styles.goalSubtitle}>{item.goal_type} • {item.status}</Text>
-                </View>
-                <Text style={styles.goalArrow}>→</Text>
-              </View>
-            )}
-            ListEmptyComponent={() => (
-              <View style={styles.emptyState}>
-                <Text style={styles.emptyTitle}>No goals yet</Text>
-                <Text style={styles.emptySubtitle}>Create your first goal to get started</Text>
-              </View>
-            )}
-            onRefresh={loadGoals}
-            refreshing={loading}
-          />
-        )
-      )}
+      </View>
     </SafeAreaView>
   );
 }

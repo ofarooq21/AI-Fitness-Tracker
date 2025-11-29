@@ -7,13 +7,14 @@ import RegisterPage from './components/RegisterPage';
 import Dashboard from './components/Dashboard';
 import MacroTracker from './components/MacroTracker';
 import WorkoutTracker from './components/WorkoutTracker';
+import GoalsList from './components/GoalsList';
 import AIInsights from './components/AIInsights';
 import SettingsPage from './components/SettingsPage';
 import { AuthService, User } from './services/authService';
 import { NotificationService } from './services/notificationService';
 
 export default function App() {
-  type Page = 'home' | 'login' | 'register' | 'dashboard' | 'macro' | 'workout' | 'aiInsights' | 'settings';
+  type Page = 'home' | 'login' | 'register' | 'dashboard' | 'macro' | 'workout' | 'goalsList' | 'aiInsights' | 'settings';
 
   const [currentPage, setCurrentPage] = useState<Page>('home');
   const [currentUser, setCurrentUser] = useState<User | null>(null);
@@ -76,6 +77,7 @@ export default function App() {
   const showDashboard = () => navigate('dashboard');
   const showMacroTracker = () => navigate('macro');
   const showWorkoutPage = () => navigate('workout');
+  const showGoalsList = () => navigate('goalsList');
   const showAIInsights = () => {
     console.log('showAIInsights called, navigating to aiInsights');
     navigate('aiInsights');
@@ -108,6 +110,7 @@ export default function App() {
       case 'dashboard': return '#/dashboard';
       case 'macro': return '#/macro';
       case 'workout': return '#/workout';
+      case 'goalsList': return '#/goals';
       case 'aiInsights': return '#/ai-insights';
       case 'settings': return '#/settings';
     }
@@ -120,6 +123,7 @@ export default function App() {
     if (hash.startsWith('#/dashboard')) return 'dashboard';
     if (hash.startsWith('#/macro')) return 'macro';
     if (hash.startsWith('#/workout')) return 'workout';
+    if (hash.startsWith('#/goals')) return 'goalsList';
     if (hash.startsWith('#/ai-insights')) return 'aiInsights';
     if (hash.startsWith('#/settings')) return 'settings';
     if (hash === '#/' || hash === '#') return 'home';
@@ -165,6 +169,7 @@ export default function App() {
         onLogout={handleLogout}
         onShowMacroTracker={showMacroTracker}
         onShowWorkoutTracker={showWorkoutPage}
+        onShowGoals={showGoalsList}
         onShowAIInsights={showAIInsights}
         onShowSettings={showSettings}
       />
@@ -179,6 +184,15 @@ export default function App() {
   if (currentPage === 'workout') {
     const goBackTo = currentUser ? showDashboard : showHomePage;
     return <WorkoutTracker onBackToHome={goBackTo} userId={currentUser?.id} />;
+  }
+
+  if (currentPage === 'goalsList') {
+    const goBackTo = currentUser ? showDashboard : showHomePage;
+    return (
+      <GoalsList
+        onBack={goBackTo}
+      />
+    );
   }
 
   if (currentPage === 'aiInsights') {
@@ -228,6 +242,10 @@ export default function App() {
               <TouchableOpacity style={styles.featureItem} onPress={showWorkoutPage}>
                 <Text style={styles.featureIcon}>🏋️</Text>
                 <Text style={styles.featureText}>Workout Tracker</Text>
+              </TouchableOpacity>
+              <TouchableOpacity style={styles.featureItem} onPress={showGoalsList}>
+                <Text style={styles.featureIcon}>🎯</Text>
+                <Text style={styles.featureText}>Daily Goals</Text>
               </TouchableOpacity>
               <TouchableOpacity style={styles.featureItem} onPress={showAIInsights}>
                 <Text style={styles.featureIcon}>🤖</Text>
