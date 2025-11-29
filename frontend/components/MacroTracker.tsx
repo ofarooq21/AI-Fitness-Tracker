@@ -12,6 +12,7 @@ import {
 } from 'react-native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { AuthService } from '../services/authService';
+import { errorLogger, withErrorHandling } from '../services/errorLogger';
 import { 
   getTotalCalories as utilsTotalCalories,
   getTotalProtein as utilsTotalProtein,
@@ -77,23 +78,30 @@ export default function MacroTracker({ onBackToHome }: MacroTrackerProps) {
   const addMeal = () => {
     const errors = validateMealDraft(newMeal as any);
     if (errors.length) {
+      errorLogger.logWarning('Meal validation failed', { errors, newMeal });
       Alert.alert('Error', errors[0]);
       return;
     }
 
-    const meal: Meal = {
-      id: Date.now().toString(),
-      name: newMeal.name,
-      calories: parseInt(newMeal.calories),
-      protein: parseInt(newMeal.protein),
-      fat: parseInt(newMeal.fat),
-      carbs: parseInt(newMeal.carbs),
-      time: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
-    };
+    try {
+      const meal: Meal = {
+        id: Date.now().toString(),
+        name: newMeal.name,
+        calories: parseInt(newMeal.calories),
+        protein: parseInt(newMeal.protein),
+        fat: parseInt(newMeal.fat),
+        carbs: parseInt(newMeal.carbs),
+        time: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
+      };
 
-    setMeals([...meals, meal]);
-    setNewMeal({ name: '', calories: '', protein: '', fat: '', carbs: '' });
-    setShowAddMeal(false);
+      setMeals([...meals, meal]);
+      setNewMeal({ name: '', calories: '', protein: '', fat: '', carbs: '' });
+      setShowAddMeal(false);
+      errorLogger.logInfo('Meal added successfully', { userId, mealName: meal.name, selectedDate });
+    } catch (error) {
+      errorLogger.logError('Failed to add meal', error as Error, { userId, newMeal });
+      Alert.alert('Error', 'Failed to add meal. Please try again.');
+    }
   };
 
   // Persistence per selected date
@@ -102,27 +110,41 @@ export default function MacroTracker({ onBackToHome }: MacroTrackerProps) {
 
   useEffect(() => {
     const load = async () => {
-      try {
-        const [mealsJson, goalJson] = await Promise.all([
-          AsyncStorage.getItem(STORAGE_MEALS_KEY(selectedDate)),
-          AsyncStorage.getItem(STORAGE_GOAL_KEY(selectedDate)),
-        ]);
-        setMeals(mealsJson ? JSON.parse(mealsJson) : []);
-        setCurrentGoal(goalJson ? JSON.parse(goalJson) : null);
-      } catch (e) {
-        // ignore
-      }
+      await withErrorHandling(
+        async () => {
+          const [mealsJson, goalJson] = await Promise.all([
+            AsyncStorage.getItem(STORAGE_MEALS_KEY(selectedDate)),
+            AsyncStorage.getItem(STORAGE_GOAL_KEY(selectedDate)),
+          ]);
+          setMeals(mealsJson ? JSON.parse(mealsJson) : []);
+          setCurrentGoal(goalJson ? JSON.parse(goalJson) : null);
+        },
+        'Failed to load macro tracker data',
+        { userId, selectedDate }
+      );
     };
     load();
-  }, [selectedDate]);
+  }, [selectedDate, userId]);
 
   useEffect(() => {
-    AsyncStorage.setItem(STORAGE_MEALS_KEY(selectedDate), JSON.stringify(meals)).catch(() => {});
-  }, [meals, selectedDate]);
+    withErrorHandling(
+      async () => {
+        await AsyncStorage.setItem(STORAGE_MEALS_KEY(selectedDate), JSON.stringify(meals));
+      },
+      'Failed to save meals',
+      { userId, selectedDate, mealCount: meals.length }
+    );
+  }, [meals, selectedDate, userId]);
 
   useEffect(() => {
-    AsyncStorage.setItem(STORAGE_GOAL_KEY(selectedDate), JSON.stringify(currentGoal)).catch(() => {});
-  }, [currentGoal, selectedDate]);
+    withErrorHandling(
+      async () => {
+        await AsyncStorage.setItem(STORAGE_GOAL_KEY(selectedDate), JSON.stringify(currentGoal));
+      },
+      'Failed to save macro goal',
+      { userId, selectedDate }
+    );
+  }, [currentGoal, selectedDate, userId]);
 
   const startEditMeal = (id: string) => {
     const m = meals.find(x => x.id === id);
@@ -324,7 +346,10 @@ export default function MacroTracker({ onBackToHome }: MacroTrackerProps) {
                     <View style={[styles.progressFill, { width: `${getGoalProgress(utilsTotalCalories(meals), currentGoal.calories)}%` }]} />
                   </View>
                   <Text style={styles.progressText}>
-                    {getGoalProgress(utilsTotalCalories(meals), currentGoal.calories).toFixed(0)}% of {currentGoal.calories}
+                    <Text style={styles.percentageText}>
+                      {getGoalProgress(utilsTotalCalories(meals), currentGoal.calories).toFixed(0)}%
+                    </Text>
+                    {' '}of {currentGoal.calories} cal
                   </Text>
                 </>
               )}
@@ -338,7 +363,10 @@ export default function MacroTracker({ onBackToHome }: MacroTrackerProps) {
                     <View style={[styles.progressFill, { width: `${getGoalProgress(utilsTotalProtein(meals), currentGoal.protein)}%` }]} />
                   </View>
                   <Text style={styles.progressText}>
-                    {getGoalProgress(utilsTotalProtein(meals), currentGoal.protein).toFixed(0)}% of {currentGoal.protein}g
+                    <Text style={styles.percentageText}>
+                      {getGoalProgress(utilsTotalProtein(meals), currentGoal.protein).toFixed(0)}%
+                    </Text>
+                    {' '}of {currentGoal.protein}g
                   </Text>
                 </>
               )}
@@ -354,7 +382,10 @@ export default function MacroTracker({ onBackToHome }: MacroTrackerProps) {
                     <View style={[styles.progressFill, { width: `${getGoalProgress(utilsTotalFat(meals), currentGoal.fat)}%` }]} />
                   </View>
                   <Text style={styles.progressText}>
-                    {getGoalProgress(utilsTotalFat(meals), currentGoal.fat).toFixed(0)}% of {currentGoal.fat}g
+                    <Text style={styles.percentageText}>
+                      {getGoalProgress(utilsTotalFat(meals), currentGoal.fat).toFixed(0)}%
+                    </Text>
+                    {' '}of {currentGoal.fat}g
                   </Text>
                 </>
               )}
@@ -368,7 +399,10 @@ export default function MacroTracker({ onBackToHome }: MacroTrackerProps) {
                     <View style={[styles.progressFill, { width: `${getGoalProgress(utilsTotalCarbs(meals), currentGoal.carbs)}%` }]} />
                   </View>
                   <Text style={styles.progressText}>
-                    {getGoalProgress(utilsTotalCarbs(meals), currentGoal.carbs).toFixed(0)}% of {currentGoal.carbs}g
+                    <Text style={styles.percentageText}>
+                      {getGoalProgress(utilsTotalCarbs(meals), currentGoal.carbs).toFixed(0)}%
+                    </Text>
+                    {' '}of {currentGoal.carbs}g
                   </Text>
                 </>
               )}
@@ -922,5 +956,10 @@ const styles = StyleSheet.create({
     color: '#666666',
     marginTop: 2,
     textAlign: 'center',
+  },
+  percentageText: {
+    fontSize: 14,
+    fontWeight: 'bold',
+    color: '#228B22',
   },
 });

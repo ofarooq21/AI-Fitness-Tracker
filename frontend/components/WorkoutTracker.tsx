@@ -12,6 +12,7 @@ import {
 } from 'react-native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { AuthService } from '../services/authService';
+import { errorLogger, withErrorHandling } from '../services/errorLogger';
 
 interface Exercise {
   id: string;
@@ -80,24 +81,93 @@ export default function WorkoutTracker({ onBackToHome }: WorkoutTrackerProps) {
     confidence_score?: number | null;
   }>>([]);
 
+  // Load userId first, then load workout history
   useEffect(() => {
-    loadWorkoutHistory();
+    const loadUserId = async () => {
+      try {
+        const user = await AuthService.getCurrentUser();
+        const id = user?.id || 'guest';
+        setUserId(id);
+      } catch (error) {
+        errorLogger.logError('Failed to load user for workout tracker', error as Error);
+        setUserId('guest');
+      }
+    };
+    loadUserId();
   }, []);
 
-  useEffect(() => {
-    AuthService.getCurrentUser().then(u => setUserId(u?.id || 'guest')).catch(() => setUserId('guest'));
-  }, []);
-
+  // Load workout history when userId is available
   const STORAGE_KEY = `workout_history_${userId}`;
+  const CURRENT_WORKOUT_KEY = `current_workout_${userId}`;
 
   const loadWorkoutHistory = async () => {
-    try {
-      const json = await AsyncStorage.getItem(STORAGE_KEY);
-      setWorkoutHistory(json ? JSON.parse(json) : []);
-    } catch (_) {
-      setWorkoutHistory([]);
-    }
+    if (userId === 'guest') return; // Wait for userId to load
+    
+    await withErrorHandling(
+      async () => {
+        const [historyJson, currentWorkoutJson] = await Promise.all([
+          AsyncStorage.getItem(STORAGE_KEY),
+          AsyncStorage.getItem(CURRENT_WORKOUT_KEY)
+        ]);
+        
+        if (historyJson) {
+          const history = JSON.parse(historyJson);
+          setWorkoutHistory(history);
+        }
+        
+        if (currentWorkoutJson) {
+          const savedWorkout = JSON.parse(currentWorkoutJson);
+          // Remove startTime from workout object before setting state
+          const { startTime: savedStartTime, ...workout } = savedWorkout;
+          setCurrentWorkout(workout);
+          if (savedStartTime) {
+            setStartTime(new Date(savedStartTime));
+          }
+        }
+      },
+      'Failed to load workout history',
+      { userId }
+    );
   };
+
+  useEffect(() => {
+    if (userId) {
+      loadWorkoutHistory();
+    }
+  }, [userId]);
+
+  // Save workout history whenever it changes
+  useEffect(() => {
+    if (userId && userId !== 'guest' && workoutHistory.length >= 0) {
+      withErrorHandling(
+        async () => {
+          await AsyncStorage.setItem(STORAGE_KEY, JSON.stringify(workoutHistory));
+        },
+        'Failed to save workout history',
+        { userId, workoutCount: workoutHistory.length }
+      );
+    }
+  }, [workoutHistory, userId]);
+
+  // Save current workout state whenever it changes (so it persists if user navigates away)
+  useEffect(() => {
+    if (userId && userId !== 'guest' && currentWorkout) {
+      const workoutToSave = {
+        ...currentWorkout,
+        startTime: startTime?.toISOString()
+      };
+      withErrorHandling(
+        async () => {
+          await AsyncStorage.setItem(CURRENT_WORKOUT_KEY, JSON.stringify(workoutToSave));
+        },
+        'Failed to save current workout',
+        { userId, workoutName: currentWorkout.name }
+      );
+    } else if (userId && userId !== 'guest' && !currentWorkout) {
+      // Clear saved workout if no active workout
+      AsyncStorage.removeItem(CURRENT_WORKOUT_KEY).catch(() => {});
+    }
+  }, [currentWorkout, startTime, userId]);
 
   const startNewWorkout = () => {
     if (!workoutName.trim()) {
@@ -120,7 +190,7 @@ export default function WorkoutTracker({ onBackToHome }: WorkoutTrackerProps) {
     setWorkoutName('');
   };
 
-  const finishWorkout = () => {
+  const finishWorkout = async () => {
     if (!currentWorkout) return;
 
     const endTime = new Date();
@@ -137,10 +207,23 @@ export default function WorkoutTracker({ onBackToHome }: WorkoutTrackerProps) {
 
     const newHistory = [updatedWorkout, ...workoutHistory];
     setWorkoutHistory(newHistory);
-    AsyncStorage.setItem(STORAGE_KEY, JSON.stringify(newHistory)).catch(() => {});
+    
+    // Save history and clear current workout
+    await withErrorHandling(
+      async () => {
+        await Promise.all([
+          AsyncStorage.setItem(STORAGE_KEY, JSON.stringify(newHistory)),
+          AsyncStorage.removeItem(CURRENT_WORKOUT_KEY)
+        ]);
+      },
+      'Failed to save completed workout',
+      { userId, workoutName: currentWorkout.name, duration }
+    );
+    
     setCurrentWorkout(null);
     setStartTime(null);
     Alert.alert('Success', `Workout completed! Duration: ${duration} minutes`);
+    errorLogger.logInfo('Workout completed', { userId, workoutName: currentWorkout.name, duration });
   };
 
   // Weekly summary derived from workoutHistory
