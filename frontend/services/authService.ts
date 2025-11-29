@@ -22,6 +22,11 @@ export class AuthService {
   // Register a new user
   static async register(email: string, password: string, name: string): Promise<User> {
     try {
+      // Split name into first and last name
+      const nameParts = name.trim().split(' ');
+      const firstName = nameParts[0];
+      const lastName = nameParts.length > 1 ? nameParts.slice(1).join(' ') : 'User';
+
       const response = await fetch(`${API_BASE_URL}/users/register`, {
         method: 'POST',
         headers: {
@@ -30,7 +35,9 @@ export class AuthService {
         body: JSON.stringify({
           email: email.toLowerCase(),
           password,
-          name,
+          first_name: firstName,
+          last_name: lastName,
+          // Optional fields left as null/undefined for now
         }),
       });
 
@@ -40,24 +47,17 @@ export class AuthService {
       }
 
       const userData = await response.json();
-      await this.setCurrentUser(userData);
 
-      // Try to obtain a token by logging in
-      try {
-        const loginResp = await fetch(`${API_BASE_URL}/users/login`, {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ email: email.toLowerCase(), password }),
-        });
-        if (loginResp.ok) {
-          const loginData = await loginResp.json();
-          await AsyncStorage.setItem(TOKEN_KEY, loginData.access_token);
-          await this.setCurrentUser(loginData.user);
-          return loginData.user as User;
-        }
-      } catch (_) {}
+      // Map backend user to frontend user interface
+      const user: User = {
+        id: userData.id,
+        email: userData.email,
+        name: `${userData.first_name} ${userData.last_name}`,
+        createdAt: userData.created_at
+      };
 
-      return userData as User;
+      // Automatically login after registration
+      return await this.login(email, password);
     } catch (error) {
       console.error('Registration error:', error);
       throw error;
@@ -85,8 +85,17 @@ export class AuthService {
 
       const loginData = await response.json();
       await AsyncStorage.setItem(TOKEN_KEY, loginData.access_token);
-      await this.setCurrentUser(loginData.user);
-      return loginData.user as User;
+
+      const backendUser = loginData.user;
+      const user: User = {
+        id: backendUser.id,
+        email: backendUser.email,
+        name: `${backendUser.first_name} ${backendUser.last_name}`,
+        createdAt: backendUser.created_at
+      };
+
+      await this.setCurrentUser(user);
+      return user;
     } catch (error) {
       console.error('Login error:', error);
       throw error;
@@ -144,7 +153,7 @@ export class AuthService {
   // Make authenticated API request
   static async makeAuthenticatedRequest(endpoint: string, options: RequestInit = {}): Promise<Response> {
     const token = await this.getAuthToken();
-    
+
     if (!token) {
       throw new Error('No authentication token found');
     }

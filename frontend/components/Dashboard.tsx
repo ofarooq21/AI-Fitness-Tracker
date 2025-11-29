@@ -9,9 +9,10 @@ interface DashboardProps {
   onShowWorkoutTracker: () => void;
   onShowGoals: () => void;
   onShowAIInsights: () => void;
+  onShowSettings: () => void;
 }
 
-export default function Dashboard({ onLogout, onShowMacroTracker, onShowWorkoutTracker, onShowGoals, onShowAIInsights }: DashboardProps) {
+export default function Dashboard({ onLogout, onShowMacroTracker, onShowWorkoutTracker, onShowGoals, onShowAIInsights, onShowSettings }: DashboardProps) {
   const [user, setUser] = useState<User | null>(null);
   const [userCount, setUserCount] = useState(0);
   const [todayMeals, setTodayMeals] = useState(0);
@@ -50,21 +51,30 @@ export default function Dashboard({ onLogout, onShowMacroTracker, onShowWorkoutT
   };
 
   const handleLogout = async () => {
-    Alert.alert(
-      'Logout',
-      'Are you sure you want to logout?',
-      [
-        { text: 'Cancel', style: 'cancel' },
-        { 
-          text: 'Logout', 
-          style: 'destructive',
-          onPress: async () => {
-            await AuthService.logout();
-            onLogout();
+    // Use window.confirm for web, Alert for native
+    if (typeof window !== 'undefined' && window.confirm) {
+      const confirmed = window.confirm('Are you sure you want to logout?');
+      if (confirmed) {
+        await AuthService.logout();
+        onLogout();
+      }
+    } else {
+      Alert.alert(
+        'Logout',
+        'Are you sure you want to logout?',
+        [
+          { text: 'Cancel', style: 'cancel' },
+          {
+            text: 'Logout',
+            style: 'destructive',
+            onPress: async () => {
+              await AuthService.logout();
+              onLogout();
+            }
           }
-        }
-      ]
-    );
+        ]
+      );
+    }
   };
 
   if (!user) {
@@ -85,9 +95,14 @@ export default function Dashboard({ onLogout, onShowMacroTracker, onShowWorkoutT
           <Text style={styles.brandEmoji}>🍽️</Text>
           <Text style={styles.brandText}>NutrifyAI</Text>
         </View>
-        <TouchableOpacity onPress={handleLogout} style={styles.logoutButton}>
-          <Text style={styles.logoutButtonText}>Logout</Text>
-        </TouchableOpacity>
+        <View style={styles.headerActions}>
+          <TouchableOpacity onPress={onShowSettings} style={styles.iconButton}>
+            <Text style={styles.iconButtonText}>⚙️</Text>
+          </TouchableOpacity>
+          <TouchableOpacity onPress={handleLogout} style={styles.logoutButton}>
+            <Text style={styles.logoutButtonText}>Logout</Text>
+          </TouchableOpacity>
+        </View>
       </View>
 
       <ScrollView style={styles.content}>
@@ -142,8 +157,8 @@ export default function Dashboard({ onLogout, onShowMacroTracker, onShowWorkoutT
               <Text style={styles.tileSub}>Set and track goals</Text>
             </View>
           </TouchableOpacity>
-          <TouchableOpacity 
-            style={styles.tile} 
+          <TouchableOpacity
+            style={styles.tile}
             onPress={onShowAIInsights}
             activeOpacity={0.7}
             testID="ai-insights-button"
@@ -220,6 +235,19 @@ const styles = StyleSheet.create({
     fontSize: 24,
     fontWeight: 'bold',
     color: '#1E3A8A',
+  },
+  headerActions: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 12,
+  },
+  iconButton: {
+    padding: 8,
+    backgroundColor: '#F3F4F6',
+    borderRadius: 8,
+  },
+  iconButtonText: {
+    fontSize: 18,
   },
   logoutButton: {
     backgroundColor: '#FF6B6B',

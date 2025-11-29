@@ -10,7 +10,7 @@ import uuid
 
 router = APIRouter(prefix="/users", tags=["users"])
 
-@router.post("/register", response_model=UserOut, status_code=status.HTTP_201_CREATED)
+@router.post("/register", response_model=UserOut, status_code=status.HTTP_201_CREATED, response_model_by_alias=False)
 async def register_user(user_data: UserCreate, db: AsyncIOMotorDatabase = Depends(get_db)):
     """Register a new user."""
     # Check if user already exists
@@ -50,7 +50,7 @@ class LoginRequest(BaseModel):
     email: str
     password: str
 
-@router.post("/login", response_model=Token)
+@router.post("/login", response_model=Token, response_model_by_alias=False)
 async def login_user(
     login_data: LoginRequest,
     db: AsyncIOMotorDatabase = Depends(get_db)
@@ -73,9 +73,14 @@ async def login_user(
     
     # Create access token
     access_token = create_access_token(data={"sub": login_data.email})
-    return Token(access_token=access_token, token_type="bearer")
+    
+    # Prepare user response
+    user.pop("hashed_password")
+    user_out = UserOut(**user)
+    
+    return Token(access_token=access_token, token_type="bearer", user=user_out)
 
-@router.get("/me", response_model=UserOut)
+@router.get("/me", response_model=UserOut, response_model_by_alias=False)
 async def get_current_user_profile(current_user: dict = Depends(get_current_user), db: AsyncIOMotorDatabase = Depends(get_db)):
     """Get current user's profile."""
     # Find user by email
@@ -90,7 +95,7 @@ async def get_current_user_profile(current_user: dict = Depends(get_current_user
     user.pop("hashed_password", None)
     return UserOut(**user)
 
-@router.put("/me", response_model=UserOut)
+@router.put("/me", response_model=UserOut, response_model_by_alias=False)
 async def update_current_user_profile(
     user_update: UserUpdate,
     current_user: dict = Depends(get_current_user),
@@ -119,7 +124,7 @@ async def update_current_user_profile(
     updated_user.pop("hashed_password", None)
     return UserOut(**updated_user)
 
-@router.get("", response_model=List[UserOut])
+@router.get("", response_model=List[UserOut], response_model_by_alias=False)
 async def list_users(
     skip: int = 0,
     limit: int = 100,

@@ -12,12 +12,15 @@
   "dependencies": {
     "@react-native-async-storage/async-storage": "^2.2.0",
     "expo": "~54.0.10",
+    "expo-constants": "^18.0.10",
+    "expo-device": "^8.0.9",
+    "expo-notifications": "^0.32.13",
     "expo-status-bar": "~3.0.8",
     "react": "19.1.0",
     "react-dom": "^19.1.0",
     "react-native": "0.81.4",
-    "react-native-web": "^0.21.1",
-    "react-native-svg": "^15.2.0"
+    "react-native-svg": "^15.2.0",
+    "react-native-web": "^0.21.1"
   },
   "devDependencies": {
     "@types/jest": "^29.5.12",
@@ -29,9 +32,17 @@
   "jest": {
     "preset": "ts-jest",
     "testEnvironment": "node",
-    "testMatch": ["**/__tests__/**/*.test.(ts|tsx|js)"],
-    "moduleFileExtensions": ["ts", "tsx", "js"],
-    "roots": ["<rootDir>"]
+    "testMatch": [
+      "**/__tests__/**/*.test.(ts|tsx|js)"
+    ],
+    "moduleFileExtensions": [
+      "ts",
+      "tsx",
+      "js"
+    ],
+    "roots": [
+      "<rootDir>"
+    ]
   },
   "private": true
 }

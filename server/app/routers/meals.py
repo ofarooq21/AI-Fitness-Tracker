@@ -118,7 +118,7 @@ async def job_status(
     return JobStatusResponse(task_id=task_id, status=status)
 
 
-@router.post("", response_model=MealOut, status_code=status.HTTP_201_CREATED)
+@router.post("", response_model=MealOut, status_code=status.HTTP_201_CREATED, response_model_by_alias=False)
 async def create_meal(
     meal_data: MealCreate,
     current_user: dict = Depends(get_current_user_optional),
@@ -143,7 +143,7 @@ async def create_meal(
     
     return MealOut(**meal_doc)
 
-@router.get("", response_model=List[MealOut])
+@router.get("", response_model=List[MealOut], response_model_by_alias=False)
 async def list_meals(
     user_id: Optional[str] = Query(None),
     meal_type: Optional[MealType] = Query(None),
@@ -184,7 +184,7 @@ async def list_meals(
     
     return meals
 
-@router.get("/{meal_id}", response_model=MealOut)
+@router.get("/{meal_id}", response_model=MealOut, response_model_by_alias=False)
 async def get_meal(
     meal_id: str,
     current_user: dict = Depends(get_current_user_optional),
@@ -200,7 +200,7 @@ async def get_meal(
     
     return MealOut(**meal)
 
-@router.put("/{meal_id}", response_model=MealOut)
+@router.put("/{meal_id}", response_model=MealOut, response_model_by_alias=False)
 async def update_meal(
     meal_id: str,
     meal_update: MealUpdate,

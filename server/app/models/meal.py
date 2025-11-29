@@ -1,6 +1,6 @@
 from datetime import datetime
 from typing import Optional, List
-from pydantic import BaseModel
+from pydantic import BaseModel, Field
 from enum import Enum
 
 class MealType(str, Enum):
@@ -37,9 +37,12 @@ class MealUpdate(BaseModel):
     notes: Optional[str] = None
 
 class MealOut(MealCreate):
-    id: str
+    id: str = Field(alias="_id")
     created_at: datetime
     updated_at: datetime
+    
+    class Config:
+        populate_by_name = True
 
 class MealSummary(BaseModel):
     id: str

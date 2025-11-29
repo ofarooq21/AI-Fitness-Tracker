@@ -15,10 +15,10 @@ export default function RegisterPage({ onBackToLogin, onRegisterSuccess }: Regis
     confirmPassword: ''
   });
   const [isLoading, setIsLoading] = useState(false);
-  const [touched, setTouched] = useState<{[k: string]: boolean}>({});
+  const [touched, setTouched] = useState<{ [k: string]: boolean }>({});
 
   const errors = useMemo(() => {
-    const e: {[k: string]: string} = {};
+    const e: { [k: string]: string } = {};
     const name = formData.name.trim();
     const email = formData.email.trim();
     const password = formData.password.trim();
@@ -41,18 +41,33 @@ export default function RegisterPage({ onBackToLogin, onRegisterSuccess }: Regis
     const confirmPassword = formData.confirmPassword.trim();
     setTouched({ name: true, email: true, password: true, confirmPassword: true });
     if (!isValid) {
-      Alert.alert('Error', 'Please resolve the highlighted fields');
+      if (typeof window !== 'undefined' && window.alert) {
+        window.alert('Please resolve the highlighted fields');
+      } else {
+        Alert.alert('Error', 'Please resolve the highlighted fields');
+      }
       return;
     }
 
     setIsLoading(true);
     try {
       const user = await AuthService.register(email, password, name);
-      Alert.alert('Success', 'Account created successfully!', [
-        { text: 'OK', onPress: () => onRegisterSuccess(user) }
-      ]);
+
+      // Call onRegisterSuccess immediately, don't wait for alert
+      onRegisterSuccess(user);
+
+      // Show success message (optional, won't block navigation)
+      if (typeof window !== 'undefined' && window.alert) {
+        window.alert('Account created successfully!');
+      } else {
+        Alert.alert('Success', 'Account created successfully!');
+      }
     } catch (error: any) {
-      Alert.alert('Error', error.message || 'Failed to create account');
+      if (typeof window !== 'undefined' && window.alert) {
+        window.alert(error.message || 'Failed to create account');
+      } else {
+        Alert.alert('Error', error.message || 'Failed to create account');
+      }
     } finally {
       setIsLoading(false);
     }
@@ -79,7 +94,7 @@ export default function RegisterPage({ onBackToLogin, onRegisterSuccess }: Regis
               placeholder="Enter your full name"
               placeholderTextColor="#999"
               value={formData.name}
-              onChangeText={(text) => setFormData({...formData, name: text})}
+              onChangeText={(text) => setFormData({ ...formData, name: text })}
               autoCapitalize="words"
               autoCorrect={false}
             />
@@ -93,7 +108,7 @@ export default function RegisterPage({ onBackToLogin, onRegisterSuccess }: Regis
               placeholder="Enter your email"
               placeholderTextColor="#999"
               value={formData.email}
-              onChangeText={(text) => setFormData({...formData, email: text})}
+              onChangeText={(text) => setFormData({ ...formData, email: text })}
               keyboardType="email-address"
               autoCapitalize="none"
               autoCorrect={false}
@@ -108,7 +123,7 @@ export default function RegisterPage({ onBackToLogin, onRegisterSuccess }: Regis
               placeholder="Enter your password"
               placeholderTextColor="#999"
               value={formData.password}
-              onChangeText={(text) => setFormData({...formData, password: text})}
+              onChangeText={(text) => setFormData({ ...formData, password: text })}
               secureTextEntry
               autoCapitalize="none"
               autoCorrect={false}
@@ -123,7 +138,7 @@ export default function RegisterPage({ onBackToLogin, onRegisterSuccess }: Regis
               placeholder="Confirm your password"
               placeholderTextColor="#999"
               value={formData.confirmPassword}
-              onChangeText={(text) => setFormData({...formData, confirmPassword: text})}
+              onChangeText={(text) => setFormData({ ...formData, confirmPassword: text })}
               secureTextEntry
               autoCapitalize="none"
               autoCorrect={false}
@@ -227,7 +242,6 @@ const styles = StyleSheet.create({
     borderColor: '#E0E0E0',
   },
   registerButton: {
-    backgroundColor: '#228B22',
     backgroundColor: '#2563EB',
     borderRadius: 12,
     paddingVertical: 16,

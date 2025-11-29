@@ -20,20 +20,35 @@ export default function LoginPage({ onBackToHome, onLoginSuccess, onShowRegister
     const trimmedEmail = email.trim();
     const trimmedPassword = password.trim();
     if (!trimmedEmail || !trimmedPassword) {
-      Alert.alert('Error', 'Please fill in all fields');
+      if (typeof window !== 'undefined' && window.alert) {
+        window.alert('Please fill in all fields');
+      } else {
+        Alert.alert('Error', 'Please fill in all fields');
+      }
       return;
     }
 
     setIsLoading(true);
-    
+
     try {
       const user = await AuthService.login(trimmedEmail, trimmedPassword);
       await AuthService.setCurrentUser(user);
-      Alert.alert('Success', `Welcome back, ${user.name}!`, [
-        { text: 'OK', onPress: () => onLoginSuccess(user) }
-      ]);
+
+      // Call onLoginSuccess immediately, don't wait for alert
+      onLoginSuccess(user);
+
+      // Show success message (optional, won't block navigation)
+      if (typeof window !== 'undefined' && window.alert) {
+        window.alert(`Welcome back, ${user.name}!`);
+      } else {
+        Alert.alert('Success', `Welcome back, ${user.name}!`);
+      }
     } catch (error: any) {
-      Alert.alert('Error', error.message || 'Login failed');
+      if (typeof window !== 'undefined' && window.alert) {
+        window.alert(error.message || 'Login failed');
+      } else {
+        Alert.alert('Error', error.message || 'Login failed');
+      }
     } finally {
       setIsLoading(false);
     }

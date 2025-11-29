@@ -10,10 +10,12 @@ import WorkoutTracker from './components/WorkoutTracker';
 import GoalForm from './components/GoalForm';
 import GoalsList from './components/GoalsList';
 import AIInsights from './components/AIInsights';
+import SettingsPage from './components/SettingsPage';
 import { AuthService, User } from './services/authService';
+import { NotificationService } from './services/notificationService';
 
 export default function App() {
-  type Page = 'home' | 'login' | 'register' | 'dashboard' | 'macro' | 'workout' | 'goalsForm' | 'goalsList' | 'aiInsights';
+  type Page = 'home' | 'login' | 'register' | 'dashboard' | 'macro' | 'workout' | 'goalsForm' | 'goalsList' | 'aiInsights' | 'settings';
 
   const [currentPage, setCurrentPage] = useState<Page>('home');
   const [currentUser, setCurrentUser] = useState<User | null>(null);
@@ -24,6 +26,11 @@ export default function App() {
 
   useEffect(() => {
     checkAuthStatus();
+    // Initialize notifications
+    NotificationService.loadSettings().then(settings => {
+      NotificationService.scheduleNotifications(settings);
+    });
+
     // Initialize route from URL (web)
     if (typeof window !== 'undefined') {
       const pageFromUrl = hashToPage(window.location.hash);
@@ -78,6 +85,7 @@ export default function App() {
     console.log('showAIInsights called, navigating to aiInsights');
     navigate('aiInsights');
   };
+  const showSettings = () => navigate('settings');
 
   // Auth handlers
   const handleLoginSuccess = (user: User) => {
@@ -108,6 +116,7 @@ export default function App() {
       case 'goalsForm': return '#/goals/new';
       case 'goalsList': return '#/goals';
       case 'aiInsights': return '#/ai-insights';
+      case 'settings': return '#/settings';
     }
   }
 
@@ -121,6 +130,7 @@ export default function App() {
     if (hash.startsWith('#/goals/new')) return 'goalsForm';
     if (hash.startsWith('#/goals')) return 'goalsList';
     if (hash.startsWith('#/ai-insights')) return 'aiInsights';
+    if (hash.startsWith('#/settings')) return 'settings';
     if (hash === '#/' || hash === '#') return 'home';
     return 'home';
   }
@@ -166,6 +176,7 @@ export default function App() {
         onShowWorkoutTracker={showWorkoutPage}
         onShowGoals={showGoalsList}
         onShowAIInsights={showAIInsights}
+        onShowSettings={showSettings}
       />
     );
   }
@@ -179,7 +190,6 @@ export default function App() {
     const goBackTo = currentUser ? showDashboard : showHomePage;
     return <WorkoutTracker onBackToHome={goBackTo} userId={currentUser?.id} />;
   }
-
 
   if (currentPage === 'goalsForm') {
     const goBackTo = currentUser ? showDashboard : showHomePage;
@@ -209,6 +219,11 @@ export default function App() {
   if (currentPage === 'aiInsights') {
     const goBackTo = currentUser ? showDashboard : showHomePage;
     return <AIInsights onBack={goBackTo} />;
+  }
+
+  if (currentPage === 'settings') {
+    const goBackTo = currentUser ? showDashboard : showHomePage;
+    return <SettingsPage onBack={goBackTo} />;
   }
 
   // Home / Landing

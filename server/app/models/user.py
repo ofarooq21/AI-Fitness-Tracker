@@ -20,11 +20,11 @@ class UserCreate(BaseModel):
     password: str
     first_name: str
     last_name: str
-    date_of_birth: datetime
-    gender: Gender
-    height_cm: float
-    weight_kg: float
-    activity_level: ActivityLevel
+    date_of_birth: Optional[datetime] = None
+    gender: Optional[Gender] = None
+    height_cm: Optional[float] = None
+    weight_kg: Optional[float] = None
+    activity_level: Optional[ActivityLevel] = None
 
 class UserUpdate(BaseModel):
     first_name: Optional[str] = None
@@ -33,18 +33,25 @@ class UserUpdate(BaseModel):
     weight_kg: Optional[float] = None
     activity_level: Optional[ActivityLevel] = None
 
+from pydantic import BaseModel, EmailStr, Field
+
+# ... (imports)
+
 class UserOut(BaseModel):
-    id: str
+    id: str = Field(alias="_id")
     email: str
     first_name: str
     last_name: str
-    date_of_birth: datetime
-    gender: Gender
-    height_cm: float
-    weight_kg: float
-    activity_level: ActivityLevel
+    date_of_birth: Optional[datetime] = None
+    gender: Optional[Gender] = None
+    height_cm: Optional[float] = None
+    weight_kg: Optional[float] = None
+    activity_level: Optional[ActivityLevel] = None
     created_at: datetime
     updated_at: datetime
+
+    class Config:
+        populate_by_name = True
 
 class UserInDB(UserOut):
     hashed_password: str
@@ -52,6 +59,7 @@ class UserInDB(UserOut):
 class Token(BaseModel):
     access_token: str
     token_type: str
+    user: UserOut
 
 class TokenData(BaseModel):
     email: Optional[str] = None
