@@ -134,19 +134,25 @@ export default function MacroTracker({ onBackToHome }: MacroTrackerProps) {
           });
 
           if (!response.ok) {
-            throw new Error('Failed to save meal to server');
+            const errorData = await response.json().catch(() => ({}));
+            console.error('Failed to save meal:', errorData);
+            throw new Error(errorData.detail || 'Failed to save meal to server');
           }
           
+          const savedMeal = await response.json();
+          console.log('Meal saved to backend successfully:', savedMeal);
           errorLogger.logInfo('Meal saved to backend', { userId, mealName: meal.name });
         } catch (error) {
+          console.error('Error saving meal to backend:', error);
           errorLogger.logError('Failed to save meal to backend', error as Error, { userId });
-          // Continue anyway - local storage will persist
+          showAlert('Warning', 'Meal saved locally but could not sync to server. Your data is safe in local storage.');
         }
       }
 
       setMeals([...meals, meal]);
       setNewMeal({ name: '', calories: '', protein: '', fat: '', carbs: '' });
       setShowAddMeal(false);
+      showAlert('Success', 'Meal added successfully!');
       errorLogger.logInfo('Meal added successfully', { userId, mealName: meal.name, selectedDate });
     } catch (error) {
       errorLogger.logError('Failed to add meal', error as Error, { userId, newMeal });
