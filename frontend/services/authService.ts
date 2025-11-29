@@ -18,6 +18,44 @@ const API_BASE_URL = 'http://localhost:8000';
 const TOKEN_KEY = 'celery_auth_token';
 const CURRENT_USER_KEY = 'celery_current_user';
 
+// Helper to turn FastAPI-style error responses into readable messages
+function extractErrorMessage(errorData: any, fallback: string): string {
+  const detail = (errorData && (errorData.detail ?? errorData.message)) ?? null;
+
+  // If backend sent a simple string
+  if (typeof detail === 'string') {
+    return detail;
+  }
+
+  // If backend sent a list of validation errors: [{ msg, loc, type, ...}, ...]
+  if (Array.isArray(detail)) {
+    const parts = detail
+      .map((item) => {
+        if (!item) return null;
+        if (typeof item === 'string') return item;
+        if (item.msg) return item.msg;
+        if (item.detail) return item.detail;
+        return null;
+      })
+      .filter(Boolean);
+
+    if (parts.length > 0) {
+      return parts.join('\n');
+    }
+  }
+
+  // Fallback to JSON if detail is an object
+  if (detail && typeof detail === 'object') {
+    try {
+      return JSON.stringify(detail);
+    } catch {
+      // ignore
+    }
+  }
+
+  return fallback;
+}
+
 export class AuthService {
   // Register a new user
   static async register(email: string, password: string, name: string): Promise<User> {
@@ -37,13 +75,14 @@ export class AuthService {
           password,
           first_name: firstName,
           last_name: lastName,
-          // Optional fields left as null/undefined for now
+          // Don't send optional profile fields - let backend use defaults
         }),
       });
 
       if (!response.ok) {
         const errorData = await response.json().catch(() => ({}));
-        throw new Error(errorData.detail || 'Registration failed');
+        const message = extractErrorMessage(errorData, 'Registration failed');
+        throw new Error(message);
       }
 
       const userData = await response.json();
@@ -80,7 +119,8 @@ export class AuthService {
 
       if (!response.ok) {
         const errorData = await response.json().catch(() => ({}));
-        throw new Error(errorData.detail || 'Login failed');
+        const message = extractErrorMessage(errorData, 'Login failed');
+        throw new Error(message);
       }
 
       const loginData = await response.json();

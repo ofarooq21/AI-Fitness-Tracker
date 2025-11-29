@@ -208,9 +208,66 @@ export default function WorkoutTracker({ onBackToHome }: WorkoutTrackerProps) {
     const newHistory = [updatedWorkout, ...workoutHistory];
     setWorkoutHistory(newHistory);
     
-    // Save history and clear current workout
+    // Save to backend API
     await withErrorHandling(
       async () => {
+        // Save to backend if user is authenticated
+        if (userId && userId !== 'guest') {
+          try {
+            const token = await AuthService.getAuthToken();
+            const headers: HeadersInit = {
+              'Content-Type': 'application/json',
+            };
+            if (token) {
+              headers['Authorization'] = `Bearer ${token}`;
+            }
+
+            // Map exercise category to backend ExerciseType enum
+            const mapCategoryToType = (category: string): string => {
+              const cat = category.toLowerCase();
+              if (cat === 'cardio') return 'cardio';
+              if (cat === 'flexibility' || cat === 'core') return 'flexibility';
+              if (cat === 'sports') return 'sports';
+              return 'strength'; // Default for Chest, Back, Shoulders, Arms, Legs
+            };
+
+            // Transform workout data to match backend schema
+            const workoutData = {
+              user_id: userId,
+              name: currentWorkout.name,
+              date: new Date(currentWorkout.date).toISOString(),
+              duration_minutes: duration,
+              exercises: currentWorkout.exercises.map(ex => ({
+                name: ex.exercise.name,
+                exercise_type: mapCategoryToType(ex.exercise.category || 'strength'),
+                sets: ex.sets.map(s => ({
+                  reps: s.reps,
+                  weight_kg: s.weight * 0.453592, // Convert lbs to kg
+                  rest_seconds: 60
+                })),
+                notes: ex.notes || ''
+              })),
+              notes: ''
+            };
+
+            const response = await fetch('http://localhost:8000/workouts', {
+              method: 'POST',
+              headers,
+              body: JSON.stringify(workoutData)
+            });
+
+            if (!response.ok) {
+              throw new Error('Failed to save workout to server');
+            }
+            
+            errorLogger.logInfo('Workout saved to backend', { userId, workoutName: currentWorkout.name });
+          } catch (error) {
+            errorLogger.logError('Failed to save workout to backend', error as Error, { userId });
+            // Continue anyway - local storage will persist
+          }
+        }
+
+        // Also save to local storage as backup
         await Promise.all([
           AsyncStorage.setItem(STORAGE_KEY, JSON.stringify(newHistory)),
           AsyncStorage.removeItem(CURRENT_WORKOUT_KEY)
@@ -409,7 +466,7 @@ export default function WorkoutTracker({ onBackToHome }: WorkoutTrackerProps) {
         <Text style={styles.logo}>🏋️ Workout Tracker</Text>
       </View>
 
-      <View style={[styles.content, styles.inner]}>
+      <ScrollView style={styles.content} contentContainerStyle={styles.inner}>
         {!currentWorkout ? (
           // Workout Selection/History View
           <View>
@@ -463,8 +520,8 @@ export default function WorkoutTracker({ onBackToHome }: WorkoutTrackerProps) {
             </View>
           </View>
         ) : (
-          // Active Workout View
-          <View>
+          // Active Workout View - Now scrollable!
+          <View style={{ paddingBottom: 20 }}>
             {/* Workout Header */}
             <View style={styles.activeWorkoutHeader}>
               <Text style={styles.workoutTitle}>{currentWorkout.name}</Text>
@@ -569,7 +626,7 @@ export default function WorkoutTracker({ onBackToHome }: WorkoutTrackerProps) {
             </TouchableOpacity>
           </View>
         )}
-      </View>
+      </ScrollView>
 
       {/* Bottom Summary Section */}
       <View style={[styles.summaryContainer, styles.inner]}>

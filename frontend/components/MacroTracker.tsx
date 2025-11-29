@@ -75,7 +75,7 @@ export default function MacroTracker({ onBackToHome }: MacroTrackerProps) {
     duration: '30' // default 30 days
   });
 
-  const addMeal = () => {
+  const addMeal = async () => {
     const errors = validateMealDraft(newMeal as any);
     if (errors.length) {
       errorLogger.logWarning('Meal validation failed', { errors, newMeal });
@@ -93,6 +93,56 @@ export default function MacroTracker({ onBackToHome }: MacroTrackerProps) {
         carbs: parseInt(newMeal.carbs),
         time: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
       };
+
+      // Save to backend API if authenticated
+      if (userId && userId !== 'guest') {
+        try {
+          const token = await AuthService.getAuthToken();
+          const headers: HeadersInit = {
+            'Content-Type': 'application/json',
+          };
+          if (token) {
+            headers['Authorization'] = `Bearer ${token}`;
+          }
+
+          // Determine meal type based on time of day
+          const hour = new Date().getHours();
+          let mealType = 'snack';
+          if (hour >= 5 && hour < 11) mealType = 'breakfast';
+          else if (hour >= 11 && hour < 16) mealType = 'lunch';
+          else if (hour >= 16 && hour < 22) mealType = 'dinner';
+
+          const mealData = {
+            user_id: userId,
+            label: meal.name,
+            meal_type: mealType,
+            macros: {
+              kcal: meal.calories,
+              protein_g: meal.protein,
+              carbs_g: meal.carbs,
+              fat_g: meal.fat
+            },
+            portion_size: 'medium',
+            confidence: 1.0,
+            file_key: null
+          };
+
+          const response = await fetch('http://localhost:8000/meals', {
+            method: 'POST',
+            headers,
+            body: JSON.stringify(mealData)
+          });
+
+          if (!response.ok) {
+            throw new Error('Failed to save meal to server');
+          }
+          
+          errorLogger.logInfo('Meal saved to backend', { userId, mealName: meal.name });
+        } catch (error) {
+          errorLogger.logError('Failed to save meal to backend', error as Error, { userId });
+          // Continue anyway - local storage will persist
+        }
+      }
 
       setMeals([...meals, meal]);
       setNewMeal({ name: '', calories: '', protein: '', fat: '', carbs: '' });

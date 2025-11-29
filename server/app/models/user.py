@@ -16,10 +16,17 @@ class ActivityLevel(str, Enum):
     EXTRA_ACTIVE = "extra_active"
 
 class UserCreate(BaseModel):
+    """
+    Schema for creating a user.
+
+    Only the core identity fields are required. Profile fields are optional
+    so registration can be lightweight from the mobile/web client.
+    """
     email: EmailStr
     password: str
     first_name: str
     last_name: str
+    # Optional profile fields
     date_of_birth: Optional[datetime] = None
     gender: Optional[Gender] = None
     height_cm: Optional[float] = None

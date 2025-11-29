@@ -34,11 +34,17 @@ async def get_ai_insights(
     # Get data from last 7 days
     seven_days_ago = datetime.utcnow() - timedelta(days=7)
     
-    # Aggregate meals data
-    meals_cursor = db.meals.find({
-        "user_id": user_id,
+    # Aggregate meals data - include both user's meals and demo meals as fallback
+    # This helps during development when user might have demo data
+    query_filter = {
+        "$or": [
+            {"user_id": user_id},
+            {"user_id": "demo"}  # Include demo data as fallback
+        ],
         "created_at": {"$gte": seven_days_ago}
-    })
+    }
+    
+    meals_cursor = db.meals.find(query_filter)
     
     total_calories = 0
     total_protein = 0
@@ -60,11 +66,15 @@ async def get_ai_insights(
     avg_daily_calories = total_calories / 7 if meal_count > 0 else 0
     avg_daily_protein = total_protein / 7 if meal_count > 0 else 0
     
-    # Aggregate workouts data
-    workouts_cursor = db.workouts.find({
-        "user_id": user_id,
+    # Aggregate workouts data - include both user's workouts and demo workouts
+    workouts_query = {
+        "$or": [
+            {"user_id": user_id},
+            {"user_id": "demo"}
+        ],
         "date": {"$gte": seven_days_ago}
-    })
+    }
+    workouts_cursor = db.workouts.find(workouts_query)
     
     workout_count = 0
     total_duration = 0
@@ -79,11 +89,15 @@ async def get_ai_insights(
     
     avg_workout_duration = total_duration / workout_count if workout_count > 0 else 0
     
-    # Get active goals
-    goals_cursor = db.goals.find({
-        "user_id": user_id,
+    # Get active goals - include both user's goals and demo goals
+    goals_query = {
+        "$or": [
+            {"user_id": user_id},
+            {"user_id": "demo"}
+        ],
         "status": "active"
-    })
+    }
+    goals_cursor = db.goals.find(goals_query)
     
     active_goals = []
     async for goal in goals_cursor:
