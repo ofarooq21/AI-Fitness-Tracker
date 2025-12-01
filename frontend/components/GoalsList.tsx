@@ -134,8 +134,8 @@ export default function GoalsList({ onBack }: GoalsListProps) {
           is_custom: task.isCustom || false
         }));
 
-        // Bulk create/update
-        await fetch(`${API_BASE_URL}/daily-goals/bulk`, {
+        // Bulk create/update (pass date as query parameter)
+        await fetch(`${API_BASE_URL}/daily-goals/bulk?date=${selectedDate}`, {
           method: 'POST',
           headers,
           body: JSON.stringify(backendTasks)
