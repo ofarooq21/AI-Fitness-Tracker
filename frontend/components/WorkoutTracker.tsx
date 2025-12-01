@@ -9,6 +9,7 @@ import {
   ScrollView,
   Modal
 } from 'react-native';
+import { LinearGradient } from 'expo-linear-gradient';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { AuthService } from '../services/authService';
 import { errorLogger, withErrorHandling } from '../services/errorLogger';
@@ -518,14 +519,22 @@ export default function WorkoutTracker({ onBackToHome }: WorkoutTrackerProps) {
   };
 
   return (
-    <SafeAreaView style={styles.container}>
-      {/* Header */}
-      <View style={styles.header}>
-        <TouchableOpacity onPress={onBackToHome} style={styles.backButton}>
-          <Text style={styles.backButtonText}>← Back</Text>
-        </TouchableOpacity>
-        <Text style={styles.logo}>🏋️ Workout Tracker</Text>
-      </View>
+    <View style={styles.container}>
+      <LinearGradient
+        colors={['#f093fb', '#f5576c']}
+        start={{ x: 0, y: 0 }}
+        end={{ x: 1, y: 1 }}
+        style={styles.gradientHeader}
+      >
+        <SafeAreaView>
+          <View style={styles.header}>
+            <TouchableOpacity onPress={onBackToHome} style={styles.backButton}>
+              <Text style={styles.backButtonText}>← Back</Text>
+            </TouchableOpacity>
+            <Text style={styles.logo}>🏋️ Workout Tracker</Text>
+          </View>
+        </SafeAreaView>
+      </LinearGradient>
 
       <ScrollView style={styles.content} contentContainerStyle={styles.inner}>
         {!currentWorkout ? (
@@ -942,35 +951,41 @@ export default function WorkoutTracker({ onBackToHome }: WorkoutTrackerProps) {
           </View>
         </View>
       </Modal>
-    </SafeAreaView>
+    </View>
   );
 }
 
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#FFFFFF',
+    backgroundColor: '#f8f9fa',
+  },
+  gradientHeader: {
+    paddingBottom: 20,
   },
   header: {
     flexDirection: 'row',
     alignItems: 'center',
     paddingHorizontal: 20,
-    paddingTop: 20,
+    paddingTop: 10,
     paddingBottom: 10,
-    backgroundColor: '#F2F6FF',
   },
   backButton: {
     marginRight: 20,
+    backgroundColor: 'rgba(255, 255, 255, 0.25)',
+    paddingHorizontal: 16,
+    paddingVertical: 8,
+    borderRadius: 12,
   },
   backButtonText: {
     fontSize: 16,
-    color: '#1E3A8A',
-    fontWeight: '500',
+    color: '#FFFFFF',
+    fontWeight: '700',
   },
   logo: {
     fontSize: 24,
-    fontWeight: 'bold',
-    color: '#1E3A8A',
+    fontWeight: '800',
+    color: '#FFFFFF',
   },
   content: {
     flex: 1,
@@ -986,10 +1001,10 @@ const styles = StyleSheet.create({
     marginBottom: 12,
   },
   sectionTitle: {
-    fontSize: 20,
-    fontWeight: 'bold',
-    color: '#1E3A8A',
-    marginBottom: 12,
+    fontSize: 22,
+    fontWeight: '800',
+    color: '#1a1a1a',
+    marginBottom: 14,
   },
   workoutNameInput: {
     backgroundColor: '#F8FAFF',
@@ -1003,15 +1018,20 @@ const styles = StyleSheet.create({
     marginBottom: 16,
   },
   startButton: {
-    backgroundColor: '#2563EB',
-    borderRadius: 10,
-    paddingVertical: 12,
+    backgroundColor: '#f5576c',
+    borderRadius: 16,
+    paddingVertical: 16,
     alignItems: 'center',
+    shadowColor: '#f5576c',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.3,
+    shadowRadius: 8,
+    elevation: 5,
   },
   startButtonText: {
     color: '#FFFFFF',
-    fontSize: 16,
-    fontWeight: '600',
+    fontSize: 17,
+    fontWeight: '700',
   },
   historySection: {
     marginTop: 12,
