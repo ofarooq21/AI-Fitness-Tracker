@@ -1,5 +1,6 @@
 import React, { useMemo, useState } from 'react';
-import { StyleSheet, Text, View, TextInput, TouchableOpacity, SafeAreaView, Alert } from 'react-native';
+import { StyleSheet, Text, View, TextInput, TouchableOpacity, SafeAreaView, Alert, ScrollView } from 'react-native';
+import { LinearGradient } from 'expo-linear-gradient';
 import { AuthService } from '../services/authService';
 
 interface RegisterPageProps {
@@ -74,18 +75,30 @@ export default function RegisterPage({ onBackToLogin, onRegisterSuccess }: Regis
   };
 
   return (
-    <SafeAreaView style={styles.container}>
-      <View style={styles.header}>
-        <TouchableOpacity onPress={onBackToLogin} style={styles.backButton}>
-          <Text style={styles.backButtonText}>← Back</Text>
-        </TouchableOpacity>
-        <Text style={styles.logo}>🍽️ NutrifyAI</Text>
-      </View>
+    <View style={styles.container}>
+      <LinearGradient
+        colors={['#667eea', '#764ba2', '#f093fb']}
+        start={{ x: 0, y: 0 }}
+        end={{ x: 1, y: 1 }}
+        style={styles.gradientBg}
+      >
+        <SafeAreaView style={styles.safeArea}>
+          <ScrollView contentContainerStyle={styles.scrollContent} showsVerticalScrollIndicator={false}>
+            <View style={styles.header}>
+              <TouchableOpacity onPress={onBackToLogin} style={styles.backButton}>
+                <Text style={styles.backButtonText}>← Back</Text>
+              </TouchableOpacity>
+            </View>
 
-      <View style={styles.content}>
-        <View style={styles.formContainer}>
-          <Text style={styles.title}>Create Account</Text>
-          <Text style={styles.subtitle}>Join NutrifyAI and start your journey</Text>
+            <View style={styles.content}>
+              <View style={styles.logoSection}>
+                <Text style={styles.logoIcon}>🍽️</Text>
+                <Text style={styles.logoText}>NutrifyAI</Text>
+              </View>
+
+              <View style={styles.formContainer}>
+                <Text style={styles.title}>Create Account</Text>
+                <Text style={styles.subtitle}>Join NutrifyAI and start your journey</Text>
 
           <View style={styles.inputContainer}>
             <Text style={styles.inputLabel}>Full Name</Text>
@@ -161,14 +174,25 @@ export default function RegisterPage({ onBackToLogin, onRegisterSuccess }: Regis
           </TouchableOpacity>
         </View>
       </View>
-    </SafeAreaView>
+          </ScrollView>
+        </SafeAreaView>
+      </LinearGradient>
+    </View>
   );
 }
 
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#FFFFFF',
+  },
+  gradientBg: {
+    flex: 1,
+  },
+  safeArea: {
+    flex: 1,
+  },
+  scrollContent: {
+    flexGrow: 1,
   },
   header: {
     flexDirection: 'row',
@@ -176,20 +200,31 @@ const styles = StyleSheet.create({
     paddingHorizontal: 20,
     paddingTop: 20,
     paddingBottom: 10,
-    backgroundColor: '#F2F6FF',
   },
   backButton: {
-    marginRight: 20,
+    backgroundColor: 'rgba(255, 255, 255, 0.25)',
+    paddingHorizontal: 16,
+    paddingVertical: 8,
+    borderRadius: 12,
   },
   backButtonText: {
     fontSize: 16,
-    color: '#1E3A8A',
-    fontWeight: '500',
+    color: '#FFFFFF',
+    fontWeight: '700',
   },
-  logo: {
-    fontSize: 24,
-    fontWeight: 'bold',
-    color: '#1E3A8A',
+  logoSection: {
+    alignItems: 'center',
+    marginBottom: 40,
+  },
+  logoIcon: {
+    fontSize: 64,
+    marginBottom: 12,
+  },
+  logoText: {
+    fontSize: 36,
+    fontWeight: '800',
+    color: '#FFFFFF',
+    letterSpacing: 1,
   },
   content: {
     flex: 1,
@@ -197,22 +232,22 @@ const styles = StyleSheet.create({
     paddingHorizontal: 24,
   },
   formContainer: {
-    backgroundColor: '#F8FAFF',
-    borderRadius: 16,
-    padding: 24,
+    backgroundColor: 'rgba(255, 255, 255, 0.95)',
+    borderRadius: 24,
+    padding: 32,
     shadowColor: '#000',
     shadowOffset: {
       width: 0,
-      height: 2,
+      height: 8,
     },
-    shadowOpacity: 0.1,
-    shadowRadius: 8,
-    elevation: 4,
+    shadowOpacity: 0.2,
+    shadowRadius: 16,
+    elevation: 8,
   },
   title: {
-    fontSize: 28,
-    fontWeight: 'bold',
-    color: '#1E3A8A',
+    fontSize: 32,
+    fontWeight: '800',
+    color: '#1a1a1a',
     textAlign: 'center',
     marginBottom: 8,
   },
@@ -221,6 +256,7 @@ const styles = StyleSheet.create({
     color: '#666666',
     textAlign: 'center',
     marginBottom: 32,
+    fontWeight: '500',
   },
   inputContainer: {
     marginBottom: 20,
@@ -242,20 +278,26 @@ const styles = StyleSheet.create({
     borderColor: '#E0E0E0',
   },
   registerButton: {
-    backgroundColor: '#2563EB',
-    borderRadius: 12,
-    paddingVertical: 16,
+    backgroundColor: '#667eea',
+    borderRadius: 16,
+    paddingVertical: 18,
     alignItems: 'center',
     marginTop: 8,
     marginBottom: 24,
+    shadowColor: '#667eea',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.4,
+    shadowRadius: 8,
+    elevation: 6,
   },
   registerButtonDisabled: {
-    backgroundColor: '#93C5FD',
+    backgroundColor: '#c7c7c7',
+    shadowOpacity: 0.1,
   },
   registerButtonText: {
     color: '#FFFFFF',
-    fontSize: 16,
-    fontWeight: '600',
+    fontSize: 17,
+    fontWeight: '700',
   },
   errorText: {
     color: '#B00020',
