@@ -9,6 +9,7 @@ import {
   ScrollView,
   Modal
 } from 'react-native';
+import { LinearGradient } from 'expo-linear-gradient';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { AuthService } from '../services/authService';
 import { errorLogger, withErrorHandling } from '../services/errorLogger';
@@ -344,14 +345,22 @@ export default function MacroTracker({ onBackToHome }: MacroTrackerProps) {
   const formatDate = (dateString: string) => formatDisplayDate(dateString);
 
   return (
-    <SafeAreaView style={styles.container}>
-      {/* Header */}
-      <View style={styles.header}>
-        <TouchableOpacity onPress={onBackToHome} style={styles.backButton}>
-          <Text style={styles.backButtonText}>← Back</Text>
-        </TouchableOpacity>
-        <Text style={styles.logo}>🥗 Macro Tracker</Text>
-      </View>
+    <View style={styles.container}>
+      <LinearGradient
+        colors={['#667eea', '#764ba2']}
+        start={{ x: 0, y: 0 }}
+        end={{ x: 1, y: 1 }}
+        style={styles.gradientHeader}
+      >
+        <SafeAreaView>
+          <View style={styles.header}>
+            <TouchableOpacity onPress={onBackToHome} style={styles.backButton}>
+              <Text style={styles.backButtonText}>← Back</Text>
+            </TouchableOpacity>
+            <Text style={styles.logo}>🥗 Macro Tracker</Text>
+          </View>
+        </SafeAreaView>
+      </LinearGradient>
 
       <ScrollView style={styles.content}>
         {/* Date Selection */}
@@ -700,35 +709,41 @@ export default function MacroTracker({ onBackToHome }: MacroTrackerProps) {
           </View>
         </View>
       </Modal>
-    </SafeAreaView>
+    </View>
   );
 }
 
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#FFFFFF',
+    backgroundColor: '#f8f9fa',
+  },
+  gradientHeader: {
+    paddingBottom: 20,
   },
   header: {
     flexDirection: 'row',
     alignItems: 'center',
     paddingHorizontal: 20,
-    paddingTop: 20,
+    paddingTop: 10,
     paddingBottom: 10,
-    backgroundColor: '#F2F6FF',
   },
   backButton: {
     marginRight: 20,
+    backgroundColor: 'rgba(255, 255, 255, 0.25)',
+    paddingHorizontal: 16,
+    paddingVertical: 8,
+    borderRadius: 12,
   },
   backButtonText: {
     fontSize: 16,
-    color: '#1E3A8A',
-    fontWeight: '500',
+    color: '#FFFFFF',
+    fontWeight: '700',
   },
   logo: {
     fontSize: 24,
-    fontWeight: 'bold',
-    color: '#1E3A8A',
+    fontWeight: '800',
+    color: '#FFFFFF',
   },
   content: {
     flex: 1,
@@ -739,10 +754,10 @@ const styles = StyleSheet.create({
     marginBottom: 20,
   },
   sectionTitle: {
-    fontSize: 20,
-    fontWeight: 'bold',
-    color: '#1E3A8A',
-    marginBottom: 12,
+    fontSize: 22,
+    fontWeight: '800',
+    color: '#1a1a1a',
+    marginBottom: 14,
   },
   dateInput: {
     backgroundColor: '#F8FAFF',
@@ -762,39 +777,51 @@ const styles = StyleSheet.create({
   },
   totalsSection: {
     marginBottom: 20,
+    marginTop: -10,
   },
   totalsContainer: {
     flexDirection: 'row',
     justifyContent: 'space-around',
-    backgroundColor: '#F8FAFF',
-    borderRadius: 12,
+    backgroundColor: '#FFFFFF',
+    borderRadius: 16,
     padding: 20,
-    marginBottom: 8,
+    marginBottom: 12,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.1,
+    shadowRadius: 8,
+    elevation: 4,
   },
   totalItem: {
     alignItems: 'center',
   },
   totalValue: {
-    fontSize: 24,
-    fontWeight: 'bold',
-    color: '#1E3A8A',
+    fontSize: 28,
+    fontWeight: '800',
+    color: '#667eea',
   },
   totalLabel: {
-    fontSize: 14,
+    fontSize: 13,
     color: '#666666',
     marginTop: 4,
+    fontWeight: '600',
   },
   addMealButton: {
-    backgroundColor: '#2563EB',
-    borderRadius: 12,
-    paddingVertical: 16,
+    backgroundColor: '#667eea',
+    borderRadius: 16,
+    paddingVertical: 18,
     alignItems: 'center',
     marginBottom: 20,
+    shadowColor: '#667eea',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.3,
+    shadowRadius: 8,
+    elevation: 5,
   },
   addMealButtonText: {
     color: '#FFFFFF',
-    fontSize: 16,
-    fontWeight: '600',
+    fontSize: 17,
+    fontWeight: '700',
   },
   mealsSection: {
     marginBottom: 20,
@@ -813,25 +840,31 @@ const styles = StyleSheet.create({
     color: '#999999',
   },
   mealItem: {
-    backgroundColor: '#F8FAFF',
-    borderRadius: 12,
-    padding: 16,
+    backgroundColor: '#FFFFFF',
+    borderRadius: 16,
+    padding: 18,
     marginBottom: 12,
     flexDirection: 'row',
     alignItems: 'center',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.08,
+    shadowRadius: 8,
+    elevation: 3,
   },
   mealInfo: {
     flex: 1,
   },
   mealName: {
-    fontSize: 16,
-    fontWeight: '600',
-    color: '#333333',
+    fontSize: 17,
+    fontWeight: '700',
+    color: '#1a1a1a',
     marginBottom: 4,
   },
   mealTime: {
-    fontSize: 14,
-    color: '#666666',
+    fontSize: 13,
+    color: '#888',
+    fontWeight: '500',
   },
   mealMacros: {
     alignItems: 'flex-end',

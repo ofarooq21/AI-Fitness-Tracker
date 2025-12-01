@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
-import { StyleSheet, Text, View, TouchableOpacity, SafeAreaView, ScrollView, Alert } from 'react-native';
+import { StyleSheet, Text, View, TouchableOpacity, SafeAreaView, ScrollView, Alert, Animated } from 'react-native';
 import { AuthService, User } from '../services/authService';
+import { LinearGradient } from 'expo-linear-gradient';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 
 interface DashboardProps {
@@ -88,230 +89,311 @@ export default function Dashboard({ onLogout, onShowMacroTracker, onShowWorkoutT
   }
 
   return (
-    <SafeAreaView style={styles.container}>
-      {/* Header */}
-      <View style={styles.header}>
-        <View style={styles.brandWrap}>
-          <Text style={styles.brandEmoji}>🍽️</Text>
-          <Text style={styles.brandText}>NutrifyAI</Text>
-        </View>
-        <View style={styles.headerActions}>
-          <TouchableOpacity onPress={onShowSettings} style={styles.iconButton}>
-            <Text style={styles.iconButtonText}>⚙️</Text>
-          </TouchableOpacity>
-          <TouchableOpacity onPress={handleLogout} style={styles.logoutButton}>
-            <Text style={styles.logoutButtonText}>Logout</Text>
-          </TouchableOpacity>
-        </View>
-      </View>
+    <View style={styles.container}>
+      <LinearGradient
+        colors={['#667eea', '#764ba2', '#f093fb']}
+        start={{ x: 0, y: 0 }}
+        end={{ x: 1, y: 1 }}
+        style={styles.gradientHeader}
+      >
+        <SafeAreaView>
+          <View style={styles.header}>
+            <View style={styles.brandWrap}>
+              <Text style={styles.brandEmoji}>🍽️</Text>
+              <Text style={styles.brandText}>NutrifyAI</Text>
+            </View>
+            <View style={styles.headerActions}>
+              <TouchableOpacity onPress={onShowSettings} style={styles.iconButton}>
+                <Text style={styles.iconButtonText}>⚙️</Text>
+              </TouchableOpacity>
+              <TouchableOpacity onPress={handleLogout} style={styles.logoutButton}>
+                <Text style={styles.logoutButtonText}>Logout</Text>
+              </TouchableOpacity>
+            </View>
+          </View>
 
-      <ScrollView style={styles.content}>
-        {/* Greeting */}
-        <View style={styles.greetingCard}>
-          <View>
+          {/* Greeting */}
+          <View style={styles.greetingSection}>
             <Text style={styles.welcomeText}>Welcome back,</Text>
             <Text style={styles.userName}>{user.name}</Text>
+            <View style={styles.streakPill}>
+              <Text style={styles.streakText}>🔥 0-day streak</Text>
+            </View>
           </View>
-          <View style={styles.streakPill}>
-            <Text style={styles.streakText}>🔥 0-day streak</Text>
-          </View>
-        </View>
+        </SafeAreaView>
+      </LinearGradient>
 
+      <ScrollView style={styles.content} showsVerticalScrollIndicator={false}>
         {/* Key Metrics */}
         <View style={styles.metricsRow}>
-          <View style={[styles.metricCard, styles.metricBlue]}>
+          <LinearGradient
+            colors={['#4facfe', '#00f2fe']}
+            start={{ x: 0, y: 0 }}
+            end={{ x: 1, y: 1 }}
+            style={styles.metricCard}
+          >
+            <Text style={styles.metricIcon}>📅</Text>
             <Text style={styles.metricLabel}>Member Since</Text>
-            <Text style={styles.metricValue}>{new Date(user.createdAt).toLocaleDateString()}</Text>
-          </View>
-          <View style={[styles.metricCard, styles.metricIndigo]}>
-            <Text style={styles.metricLabel}>Total Users</Text>
-            <Text style={styles.metricValue}>{userCount}</Text>
-          </View>
-          <View style={[styles.metricCard, styles.metricBlue]}>
+            <Text style={styles.metricValue}>{new Date(user.createdAt).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}</Text>
+          </LinearGradient>
+          <LinearGradient
+            colors={['#fa709a', '#fee140']}
+            start={{ x: 0, y: 0 }}
+            end={{ x: 1, y: 1 }}
+            style={styles.metricCard}
+          >
+            <Text style={styles.metricIcon}>🍽️</Text>
             <Text style={styles.metricLabel}>Meals Today</Text>
             <Text style={styles.metricValue}>{todayMeals}</Text>
-          </View>
+          </LinearGradient>
+          <LinearGradient
+            colors={['#a8edea', '#fed6e3']}
+            start={{ x: 0, y: 0 }}
+            end={{ x: 1, y: 1 }}
+            style={styles.metricCard}
+          >
+            <Text style={styles.metricIcon}>💪</Text>
+            <Text style={styles.metricLabel}>Workouts</Text>
+            <Text style={styles.metricValue}>{lastWorkout ? '1' : '0'}</Text>
+          </LinearGradient>
         </View>
 
         {/* Quick Actions */}
         <Text style={styles.sectionTitle}>Quick Actions</Text>
         <View style={styles.grid}>
-          <TouchableOpacity style={styles.tile} onPress={onShowMacroTracker}>
-            <Text style={styles.tileIcon}>📊</Text>
-            <View style={styles.actionContent}>
+          <TouchableOpacity 
+            style={styles.tile} 
+            onPress={onShowMacroTracker}
+            activeOpacity={0.8}
+          >
+            <LinearGradient
+              colors={['#667eea', '#764ba2']}
+              start={{ x: 0, y: 0 }}
+              end={{ x: 1, y: 1 }}
+              style={styles.tileGradient}
+            >
+              <Text style={styles.tileIcon}>📊</Text>
               <Text style={styles.tileTitle}>Macro Tracker</Text>
-              <Text style={styles.tileSub}>Track your daily nutrition</Text>
-            </View>
+              <Text style={styles.tileSub}>Track nutrition</Text>
+            </LinearGradient>
           </TouchableOpacity>
-          <TouchableOpacity style={styles.tile} onPress={onShowWorkoutTracker}>
-            <Text style={styles.tileIcon}>🏋️</Text>
-            <View style={styles.actionContent}>
-              <Text style={styles.tileTitle}>Workout Tracker</Text>
-              <Text style={styles.tileSub}>Log your exercises</Text>
-            </View>
+
+          <TouchableOpacity 
+            style={styles.tile} 
+            onPress={onShowWorkoutTracker}
+            activeOpacity={0.8}
+          >
+            <LinearGradient
+              colors={['#f093fb', '#f5576c']}
+              start={{ x: 0, y: 0 }}
+              end={{ x: 1, y: 1 }}
+              style={styles.tileGradient}
+            >
+              <Text style={styles.tileIcon}>🏋️</Text>
+              <Text style={styles.tileTitle}>Workouts</Text>
+              <Text style={styles.tileSub}>Log exercises</Text>
+            </LinearGradient>
           </TouchableOpacity>
-          <TouchableOpacity style={styles.tile} onPress={onShowGoals}>
-            <Text style={styles.tileIcon}>🎯</Text>
-            <View style={styles.actionContent}>
+
+          <TouchableOpacity 
+            style={styles.tile} 
+            onPress={onShowGoals}
+            activeOpacity={0.8}
+          >
+            <LinearGradient
+              colors={['#4facfe', '#00f2fe']}
+              start={{ x: 0, y: 0 }}
+              end={{ x: 1, y: 1 }}
+              style={styles.tileGradient}
+            >
+              <Text style={styles.tileIcon}>🎯</Text>
               <Text style={styles.tileTitle}>Daily Goals</Text>
-              <Text style={styles.tileSub}>Track daily tasks</Text>
-            </View>
+              <Text style={styles.tileSub}>Track tasks</Text>
+            </LinearGradient>
           </TouchableOpacity>
+
           <TouchableOpacity
             style={styles.tile}
             onPress={onShowAIInsights}
-            activeOpacity={0.7}
+            activeOpacity={0.8}
             testID="ai-insights-button"
           >
-            <Text style={styles.tileIcon}>🤖</Text>
-            <View style={styles.actionContent}>
+            <LinearGradient
+              colors={['#43e97b', '#38f9d7']}
+              start={{ x: 0, y: 0 }}
+              end={{ x: 1, y: 1 }}
+              style={styles.tileGradient}
+            >
+              <Text style={styles.tileIcon}>🤖</Text>
               <Text style={styles.tileTitle}>AI Insights</Text>
-              <Text style={styles.tileSub}>Get personalized insights</Text>
-            </View>
+              <Text style={styles.tileSub}>Get insights</Text>
+            </LinearGradient>
           </TouchableOpacity>
         </View>
 
         {/* Activity */}
         <Text style={styles.sectionTitle}>Recent Activity</Text>
         <View style={styles.activityContainer}>
+          <View style={styles.activityIconWrap}>
+            <Text style={styles.activityIcon}>{lastWorkout ? '💪' : '📊'}</Text>
+          </View>
           {lastWorkout ? (
-            <>
-              <Text style={styles.activityText}>Last Workout</Text>
-              <Text style={styles.activitySubtext}>{lastWorkout.name} • {new Date(lastWorkout.date).toLocaleDateString()}</Text>
-            </>
+            <View style={styles.activityTextWrap}>
+              <Text style={styles.activityText}>Last Workout: {lastWorkout.name}</Text>
+              <Text style={styles.activitySubtext}>{new Date(lastWorkout.date).toLocaleDateString()}</Text>
+            </View>
           ) : (
-            <>
+            <View style={styles.activityTextWrap}>
               <Text style={styles.activityText}>No recent activity</Text>
-              <Text style={styles.activitySubtext}>Start using NutrifyAI to see your activity here</Text>
-            </>
+              <Text style={styles.activitySubtext}>Start tracking to see your progress</Text>
+            </View>
           )}
         </View>
+
+        <View style={{ height: 40 }} />
       </ScrollView>
-    </SafeAreaView>
+    </View>
   );
 }
 
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#FFFFFF',
+    backgroundColor: '#f8f9fa',
   },
   loadingContainer: {
     flex: 1,
     justifyContent: 'center',
     alignItems: 'center',
+    backgroundColor: '#f8f9fa',
   },
   loadingText: {
-    fontSize: 16,
-    color: '#666666',
+    fontSize: 18,
+    color: '#667eea',
+    fontWeight: '600',
+  },
+  gradientHeader: {
+    paddingBottom: 30,
   },
   header: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
     paddingHorizontal: 20,
-    paddingTop: 20,
+    paddingTop: 10,
     paddingBottom: 20,
-    backgroundColor: '#F2F6FF',
   },
   brandWrap: {
     flexDirection: 'row',
     alignItems: 'center',
   },
   brandEmoji: {
-    fontSize: 20,
+    fontSize: 28,
     marginRight: 8,
   },
   brandText: {
-    fontSize: 18,
-    fontWeight: '700',
-    color: '#1E3A8A',
+    fontSize: 24,
+    fontWeight: '800',
+    color: '#FFFFFF',
+    letterSpacing: 0.5,
+  },
+  greetingSection: {
+    paddingHorizontal: 20,
+    paddingBottom: 10,
   },
   welcomeText: {
     fontSize: 16,
-    color: '#666666',
+    color: 'rgba(255, 255, 255, 0.9)',
+    fontWeight: '500',
   },
   userName: {
-    fontSize: 24,
-    fontWeight: 'bold',
-    color: '#1E3A8A',
+    fontSize: 32,
+    fontWeight: '800',
+    color: '#FFFFFF',
+    marginTop: 4,
+    marginBottom: 12,
   },
   headerActions: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 12,
+    gap: 10,
   },
   iconButton: {
-    padding: 8,
-    backgroundColor: '#F3F4F6',
-    borderRadius: 8,
+    padding: 10,
+    backgroundColor: 'rgba(255, 255, 255, 0.25)',
+    borderRadius: 12,
+    backdropFilter: 'blur(10px)',
   },
   iconButtonText: {
-    fontSize: 18,
+    fontSize: 20,
   },
   logoutButton: {
-    backgroundColor: '#FF6B6B',
-    borderRadius: 8,
+    backgroundColor: 'rgba(255, 255, 255, 0.25)',
+    borderRadius: 12,
     paddingHorizontal: 16,
-    paddingVertical: 8,
+    paddingVertical: 10,
+    backdropFilter: 'blur(10px)',
   },
   logoutButtonText: {
     color: '#FFFFFF',
     fontSize: 14,
-    fontWeight: '600',
+    fontWeight: '700',
+  },
+  streakPill: {
+    backgroundColor: 'rgba(255, 255, 255, 0.25)',
+    paddingHorizontal: 16,
+    paddingVertical: 8,
+    borderRadius: 20,
+    alignSelf: 'flex-start',
+    backdropFilter: 'blur(10px)',
+  },
+  streakText: {
+    color: '#FFFFFF',
+    fontWeight: '700',
+    fontSize: 14,
   },
   content: {
     flex: 1,
     paddingHorizontal: 20,
+    marginTop: -20,
   },
   sectionTitle: {
-    fontSize: 20,
-    fontWeight: 'bold',
-    color: '#1E3A8A',
-    marginTop: 20,
-    marginBottom: 12,
-  },
-  greetingCard: {
-    backgroundColor: '#EEF2FF',
-    borderRadius: 12,
-    padding: 16,
-    marginTop: 20,
-    marginBottom: 12,
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-  },
-  streakPill: {
-    backgroundColor: '#DBEAFE',
-    paddingHorizontal: 12,
-    paddingVertical: 6,
-    borderRadius: 999,
-  },
-  streakText: {
-    color: '#1E3A8A',
-    fontWeight: '600',
+    fontSize: 22,
+    fontWeight: '800',
+    color: '#1a1a1a',
+    marginTop: 24,
+    marginBottom: 16,
   },
   metricsRow: {
     flexDirection: 'row',
     gap: 12,
-    marginBottom: 16,
+    marginBottom: 8,
   },
   metricCard: {
     flex: 1,
-    borderRadius: 12,
+    borderRadius: 16,
     padding: 16,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.15,
+    shadowRadius: 8,
+    elevation: 5,
   },
-  metricBlue: { backgroundColor: '#DBEAFE' },
-  metricIndigo: { backgroundColor: '#E0E7FF' },
+  metricIcon: {
+    fontSize: 24,
+    marginBottom: 8,
+  },
   metricLabel: {
-    color: '#1E3A8A',
-    fontSize: 12,
-    marginBottom: 6,
+    color: '#FFFFFF',
+    fontSize: 11,
+    marginBottom: 4,
+    fontWeight: '600',
+    opacity: 0.9,
   },
   metricValue: {
-    color: '#0F172A',
-    fontSize: 16,
-    fontWeight: '700',
+    color: '#FFFFFF',
+    fontSize: 20,
+    fontWeight: '800',
   },
   grid: {
     flexDirection: 'row',
@@ -320,47 +402,71 @@ const styles = StyleSheet.create({
   },
   tile: {
     width: '48%',
+    borderRadius: 16,
+    overflow: 'hidden',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.2,
+    shadowRadius: 8,
+    elevation: 6,
+  },
+  tileGradient: {
+    padding: 20,
+    minHeight: 140,
+    justifyContent: 'space-between',
+  },
+  tileIcon: {
+    fontSize: 36,
+    marginBottom: 12,
+  },
+  tileTitle: {
+    fontSize: 17,
+    fontWeight: '800',
+    color: '#FFFFFF',
+    marginBottom: 4,
+  },
+  tileSub: {
+    fontSize: 13,
+    color: 'rgba(255, 255, 255, 0.85)',
+    fontWeight: '500',
+  },
+  activityContainer: {
     backgroundColor: '#FFFFFF',
-    borderRadius: 12,
-    padding: 16,
+    borderRadius: 16,
+    padding: 20,
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginBottom: 24,
     shadowColor: '#000',
     shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.08,
-    shadowRadius: 6,
+    shadowRadius: 8,
     elevation: 3,
-    borderWidth: 1,
-    borderColor: '#E5EAF5',
-    minHeight: 120,
   },
-  tileIcon: {
-    fontSize: 24,
-    marginBottom: 8,
-  },
-  actionContent: { flex: 1 },
-  tileTitle: {
-    fontSize: 16,
-    fontWeight: '700',
-    color: '#1E3A8A',
-    marginBottom: 2,
-  },
-  tileSub: {
-    fontSize: 12,
-    color: '#64748B',
-  },
-  activityContainer: {
-    backgroundColor: '#F8FAFF',
-    borderRadius: 12,
-    padding: 20,
+  activityIconWrap: {
+    width: 56,
+    height: 56,
+    borderRadius: 28,
+    backgroundColor: '#f0f0f0',
+    justifyContent: 'center',
     alignItems: 'center',
-    marginBottom: 24,
+    marginRight: 16,
+  },
+  activityIcon: {
+    fontSize: 28,
+  },
+  activityTextWrap: {
+    flex: 1,
   },
   activityText: {
     fontSize: 16,
-    color: '#475569',
-    marginBottom: 8,
+    color: '#1a1a1a',
+    fontWeight: '700',
+    marginBottom: 4,
   },
   activitySubtext: {
     fontSize: 14,
-    color: '#94A3B8',
+    color: '#666',
+    fontWeight: '500',
   },
 });
