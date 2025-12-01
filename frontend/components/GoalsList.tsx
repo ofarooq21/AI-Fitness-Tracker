@@ -1,5 +1,6 @@
 import React, { useEffect, useMemo, useState } from 'react';
 import { View, Text, TouchableOpacity, FlatList, StyleSheet, SafeAreaView, TextInput } from 'react-native';
+import { LinearGradient } from 'expo-linear-gradient';
 import { GoalsService, GoalOut } from '../services/goalsService';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { DailyTask, computeDailyProgress, ensureDefaults, toggleCheckboxTask, updateCounterTask } from '../utils/dailyGoalsUtils';
@@ -74,14 +75,23 @@ export default function GoalsList({ onBack }: GoalsListProps) {
   };
 
   return (
-    <SafeAreaView style={styles.container}>
-      <View style={styles.header}>
-        <TouchableOpacity onPress={onBack} style={styles.backButton}>
-          <Text style={styles.backButtonText}>← Back</Text>
-        </TouchableOpacity>
-        <Text style={styles.title}>Daily Goals</Text>
-        <View style={{ width: 64 }} />
-      </View>
+    <View style={styles.container}>
+      <LinearGradient
+        colors={['#4facfe', '#00f2fe']}
+        start={{ x: 0, y: 0 }}
+        end={{ x: 1, y: 1 }}
+        style={styles.gradientHeader}
+      >
+        <SafeAreaView>
+          <View style={styles.header}>
+            <TouchableOpacity onPress={onBack} style={styles.backButton}>
+              <Text style={styles.backButtonText}>← Back</Text>
+            </TouchableOpacity>
+            <Text style={styles.title}>🎯 Daily Goals</Text>
+            <View style={{ width: 64 }} />
+          </View>
+        </SafeAreaView>
+      </LinearGradient>
 
       <View style={styles.dailyWrap}>
         <View style={styles.dateRow}>
@@ -149,21 +159,23 @@ export default function GoalsList({ onBack }: GoalsListProps) {
           </View>
         <TouchableOpacity style={styles.addButton} onPress={addCounterTask}><Text style={styles.addButtonText}>Add Task</Text></TouchableOpacity>
       </View>
-    </SafeAreaView>
+    </View>
   );
 }
 
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#FFFFFF',
+    backgroundColor: '#f8f9fa',
+  },
+  gradientHeader: {
+    paddingBottom: 20,
   },
   header: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
     padding: 16,
-    backgroundColor: '#F2F6FF',
   },
   tabs: {
     flexDirection: 'row',
@@ -178,10 +190,10 @@ const styles = StyleSheet.create({
     borderRadius: 999,
   },
   tabItemActive: {
-    backgroundColor: '#2563EB',
+    backgroundColor: '#4facfe',
   },
   tabText: {
-    color: '#1E3A8A',
+    color: '#1a1a1a',
     fontWeight: '600',
   },
   tabTextActive: {
@@ -190,19 +202,17 @@ const styles = StyleSheet.create({
   backButton: {
     paddingHorizontal: 12,
     paddingVertical: 8,
-    backgroundColor: '#FFFFFF',
-    borderRadius: 8,
-    borderWidth: 1,
-    borderColor: '#DDD',
+    backgroundColor: 'rgba(255, 255, 255, 0.25)',
+    borderRadius: 12,
   },
   backButtonText: {
-    color: '#1E3A8A',
-    fontWeight: '600',
+    color: '#FFFFFF',
+    fontWeight: '700',
   },
   title: {
-    fontSize: 18,
-    fontWeight: '700',
-    color: '#1E3A8A',
+    fontSize: 24,
+    fontWeight: '800',
+    color: '#FFFFFF',
   },
   createButton: {
     paddingHorizontal: 12,
