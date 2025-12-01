@@ -122,7 +122,7 @@ export default function Dashboard({ onLogout, onShowMacroTracker, onShowWorkoutT
         {/* Key Metrics */}
         <View style={styles.metricsRow}>
           <LinearGradient
-            colors={['#4facfe', '#00f2fe']}
+            colors={['#667eea', '#764ba2']}
             start={{ x: 0, y: 0 }}
             end={{ x: 1, y: 1 }}
             style={styles.metricCard}
@@ -132,7 +132,7 @@ export default function Dashboard({ onLogout, onShowMacroTracker, onShowWorkoutT
             <Text style={styles.metricValue}>{new Date(user.createdAt).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}</Text>
           </LinearGradient>
           <LinearGradient
-            colors={['#fa709a', '#fee140']}
+            colors={['#f093fb', '#f5576c']}
             start={{ x: 0, y: 0 }}
             end={{ x: 1, y: 1 }}
             style={styles.metricCard}
@@ -142,7 +142,7 @@ export default function Dashboard({ onLogout, onShowMacroTracker, onShowWorkoutT
             <Text style={styles.metricValue}>{todayMeals}</Text>
           </LinearGradient>
           <LinearGradient
-            colors={['#a8edea', '#fed6e3']}
+            colors={['#4facfe', '#00f2fe']}
             start={{ x: 0, y: 0 }}
             end={{ x: 1, y: 1 }}
             style={styles.metricCard}
@@ -214,7 +214,7 @@ export default function Dashboard({ onLogout, onShowMacroTracker, onShowWorkoutT
             testID="ai-insights-button"
           >
             <LinearGradient
-              colors={['#43e97b', '#38f9d7']}
+              colors={['#a8c0ff', '#c2e9fb']}
               start={{ x: 0, y: 0 }}
               end={{ x: 1, y: 1 }}
               style={styles.tileGradient}

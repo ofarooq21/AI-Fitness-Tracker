@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { StatusBar } from 'expo-status-bar';
-import { StyleSheet, Text, View, ScrollView, SafeAreaView, TouchableOpacity } from 'react-native';
+import { StyleSheet, Text, View, ScrollView, SafeAreaView, TouchableOpacity, Animated } from 'react-native';
+import { LinearGradient } from 'expo-linear-gradient';
 
 import LoginPage from './components/LoginPage';
 import RegisterPage from './components/RegisterPage';
@@ -207,235 +208,372 @@ export default function App() {
 
   // Home / Landing
   return (
-    <SafeAreaView style={styles.container}>
-      <StatusBar style="dark" />
-      <ScrollView contentContainerStyle={styles.scrollContent}>
-        {/* Header Section */}
-        <View style={styles.header}>
-          <Text style={styles.logo}>🍽️ NutrifyAI</Text>
-          <Text style={styles.tagline}>Smart nutrition and fitness, powered by AI</Text>
-        </View>
+    <View style={styles.container}>
+      <StatusBar style="light" />
+      <LinearGradient
+        colors={['#667eea', '#764ba2', '#f093fb']}
+        start={{ x: 0, y: 0 }}
+        end={{ x: 1, y: 1 }}
+        style={styles.gradientBg}
+      >
+        <ScrollView contentContainerStyle={styles.scrollContent} showsVerticalScrollIndicator={false}>
+          {/* Hero Section */}
+          <SafeAreaView>
+            <View style={styles.heroSection}>
+              <View style={styles.logoContainer}>
+                <Text style={styles.logoIcon}>🍽️</Text>
+                <Text style={styles.logoText}>NutrifyAI</Text>
+              </View>
+              
+              <Text style={styles.heroTitle}>Transform Your Health Journey</Text>
+              <Text style={styles.heroSubtitle}>
+                AI-powered nutrition tracking, personalized workout insights, and smart goal management - all in one beautiful app
+              </Text>
 
-        {/* Hero Section */}
-        <View style={styles.hero}>
-          <Text style={styles.heroTitle}>Eat smarter. Train better.</Text>
-          <Text style={styles.heroSubtitle}>
-            Transform your wellness with intelligent meal tracking, workout insights,
-            and personalized goal setting powered by AI.
-          </Text>
-        </View>
+              <View style={styles.ctaButtons}>
+                <TouchableOpacity 
+                  style={styles.primaryCTA} 
+                  onPress={showLoginPage}
+                  activeOpacity={0.8}
+                >
+                  <Text style={styles.primaryCTAText}>Get Started Free</Text>
+                </TouchableOpacity>
+                <TouchableOpacity 
+                  style={styles.secondaryCTA} 
+                  onPress={showRegisterPage}
+                  activeOpacity={0.8}
+                >
+                  <Text style={styles.secondaryCTAText}>Create Account</Text>
+                </TouchableOpacity>
+              </View>
+            </View>
+          </SafeAreaView>
 
-        {/* About Section */}
-        <View style={styles.aboutSection}>
-          <Text style={styles.sectionTitle}>About NutrifyAI</Text>
-          <View style={styles.aboutContent}>
-            <Text style={styles.aboutText}>
-              NutrifyAI is a comprehensive fitness and nutrition tracking application
-              that combines AI with intuitive design to help you achieve your goals.
-            </Text>
+          {/* Features Section */}
+          <View style={styles.featuresSection}>
+            <Text style={styles.featuresTitle}>Everything You Need</Text>
+            <Text style={styles.featuresSubtitle}>Powerful tools to reach your fitness goals</Text>
 
-            <View style={styles.featuresList}>
-              <TouchableOpacity style={styles.featureItem} onPress={showMacroTracker}>
-                <Text style={styles.featureIcon}>📱</Text>
-                <Text style={styles.featureText}>Macro Tracker</Text>
+            <View style={styles.featuresGrid}>
+              <TouchableOpacity 
+                style={styles.featureCard} 
+                onPress={showMacroTracker}
+                activeOpacity={0.9}
+              >
+                <LinearGradient
+                  colors={['#667eea', '#764ba2']}
+                  start={{ x: 0, y: 0 }}
+                  end={{ x: 1, y: 1 }}
+                  style={styles.featureGradient}
+                >
+                  <Text style={styles.featureCardIcon}>📊</Text>
+                  <Text style={styles.featureCardTitle}>Macro Tracker</Text>
+                  <Text style={styles.featureCardDesc}>Track calories, protein, carbs & fats with ease</Text>
+                </LinearGradient>
               </TouchableOpacity>
-              <TouchableOpacity style={styles.featureItem} onPress={showWorkoutPage}>
-                <Text style={styles.featureIcon}>🏋️</Text>
-                <Text style={styles.featureText}>Workout Tracker</Text>
+
+              <TouchableOpacity 
+                style={styles.featureCard} 
+                onPress={showWorkoutPage}
+                activeOpacity={0.9}
+              >
+                <LinearGradient
+                  colors={['#f093fb', '#f5576c']}
+                  start={{ x: 0, y: 0 }}
+                  end={{ x: 1, y: 1 }}
+                  style={styles.featureGradient}
+                >
+                  <Text style={styles.featureCardIcon}>🏋️</Text>
+                  <Text style={styles.featureCardTitle}>Workout Tracker</Text>
+                  <Text style={styles.featureCardDesc}>Log exercises, sets, reps & track progress</Text>
+                </LinearGradient>
               </TouchableOpacity>
-              <TouchableOpacity style={styles.featureItem} onPress={showGoalsList}>
-                <Text style={styles.featureIcon}>🎯</Text>
-                <Text style={styles.featureText}>Daily Goals</Text>
+
+              <TouchableOpacity 
+                style={styles.featureCard} 
+                onPress={showGoalsList}
+                activeOpacity={0.9}
+              >
+                <LinearGradient
+                  colors={['#4facfe', '#00f2fe']}
+                  start={{ x: 0, y: 0 }}
+                  end={{ x: 1, y: 1 }}
+                  style={styles.featureGradient}
+                >
+                  <Text style={styles.featureCardIcon}>🎯</Text>
+                  <Text style={styles.featureCardTitle}>Daily Goals</Text>
+                  <Text style={styles.featureCardDesc}>Set & achieve your daily fitness targets</Text>
+                </LinearGradient>
               </TouchableOpacity>
-              <TouchableOpacity style={styles.featureItem} onPress={showAIInsights}>
-                <Text style={styles.featureIcon}>🤖</Text>
-                <Text style={styles.featureText}>AI Insights</Text>
+
+              <TouchableOpacity 
+                style={styles.featureCard} 
+                onPress={showAIInsights}
+                activeOpacity={0.9}
+              >
+                <LinearGradient
+                  colors={['#a8edea', '#fed6e3']}
+                  start={{ x: 0, y: 0 }}
+                  end={{ x: 1, y: 1 }}
+                  style={styles.featureGradient}
+                >
+                  <Text style={styles.featureCardIcon}>🤖</Text>
+                  <Text style={styles.featureCardTitle}>AI Insights</Text>
+                  <Text style={styles.featureCardDesc}>Get personalized recommendations</Text>
+                </LinearGradient>
               </TouchableOpacity>
             </View>
           </View>
-        </View>
 
-        {/* CTA Section */}
-        <View style={styles.ctaSection}>
-          <Text style={styles.ctaTitle}>Ready to optimize your nutrition?</Text>
-          <Text style={styles.ctaSubtitle}>
-            Join thousands already transforming their health with NutrifyAI.
-          </Text>
-          <View style={styles.ctaButtonRow}>
-            <TouchableOpacity style={[styles.ctaButton, styles.primaryButton]} onPress={showLoginPage}>
-              <Text style={styles.primaryButtonText}>Get Started</Text>
-            </TouchableOpacity>
-            <TouchableOpacity style={[styles.ctaButton, styles.secondaryButton]} onPress={showWorkoutPage}>
-              <Text style={styles.secondaryButtonText}>Open Workout Tracker</Text>
+          {/* Stats Section */}
+          <View style={styles.statsSection}>
+            <View style={styles.statItem}>
+              <Text style={styles.statNumber}>10K+</Text>
+              <Text style={styles.statLabel}>Active Users</Text>
+            </View>
+            <View style={styles.statDivider} />
+            <View style={styles.statItem}>
+              <Text style={styles.statNumber}>1M+</Text>
+              <Text style={styles.statLabel}>Meals Tracked</Text>
+            </View>
+            <View style={styles.statDivider} />
+            <View style={styles.statItem}>
+              <Text style={styles.statNumber}>500K+</Text>
+              <Text style={styles.statLabel}>Workouts Logged</Text>
+            </View>
+          </View>
+
+          {/* Final CTA */}
+          <View style={styles.finalCTA}>
+            <Text style={styles.finalCTATitle}>Ready to Start?</Text>
+            <Text style={styles.finalCTASubtitle}>Join thousands achieving their fitness goals</Text>
+            <TouchableOpacity 
+              style={styles.finalCTAButton} 
+              onPress={showRegisterPage}
+              activeOpacity={0.8}
+            >
+              <Text style={styles.finalCTAButtonText}>Create Free Account</Text>
             </TouchableOpacity>
           </View>
-        </View>
-      </ScrollView>
-    </SafeAreaView>
+
+          <View style={{ height: 40 }} />
+        </ScrollView>
+      </LinearGradient>
+    </View>
   );
 }
 
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#FFFFFF',
+  },
+  gradientBg: {
+    flex: 1,
   },
   loadingContainer: {
     flex: 1,
     justifyContent: 'center',
     alignItems: 'center',
-    backgroundColor: '#F2F6FF',
+    backgroundColor: '#667eea',
   },
   loadingText: {
-    fontSize: 18,
-    color: '#1E3A8A',
-    fontWeight: '500',
+    fontSize: 20,
+    color: '#FFFFFF',
+    fontWeight: '700',
   },
   scrollContent: {
     flexGrow: 1,
   },
-  header: {
-    alignItems: 'center',
-    paddingTop: 40,
-    paddingBottom: 20,
-    backgroundColor: '#F2F6FF',
-  },
-  logo: {
-    fontSize: 48,
-    fontWeight: 'bold',
-    color: '#1E3A8A',
-    marginBottom: 8,
-  },
-  tagline: {
-    fontSize: 16,
-    color: '#3B82F6',
-    fontWeight: '500',
-  },
-  hero: {
+  heroSection: {
     paddingHorizontal: 24,
-    paddingVertical: 40,
+    paddingTop: 60,
+    paddingBottom: 40,
     alignItems: 'center',
-    backgroundColor: '#FFFFFF',
+  },
+  logoContainer: {
+    alignItems: 'center',
+    marginBottom: 40,
+  },
+  logoIcon: {
+    fontSize: 80,
+    marginBottom: 12,
+  },
+  logoText: {
+    fontSize: 48,
+    fontWeight: '800',
+    color: '#FFFFFF',
+    letterSpacing: 2,
   },
   heroTitle: {
-    fontSize: 32,
-    fontWeight: 'bold',
-    color: '#1E3A8A',
+    fontSize: 36,
+    fontWeight: '800',
+    color: '#FFFFFF',
     textAlign: 'center',
-    marginBottom: 16,
+    marginBottom: 20,
+    lineHeight: 42,
   },
   heroSubtitle: {
     fontSize: 18,
-    color: '#666666',
+    color: 'rgba(255, 255, 255, 0.9)',
     textAlign: 'center',
-    lineHeight: 24,
-    maxWidth: 320,
+    lineHeight: 26,
+    marginBottom: 40,
+    paddingHorizontal: 20,
+    fontWeight: '500',
   },
-  aboutSection: {
-    paddingHorizontal: 24,
-    paddingVertical: 40,
-    backgroundColor: '#F8FAFF',
-  },
-  sectionTitle: {
-    fontSize: 28,
-    fontWeight: 'bold',
-    color: '#1E3A8A',
-    textAlign: 'center',
-    marginBottom: 24,
-  },
-  aboutContent: {
-    alignItems: 'center',
-  },
-  aboutText: {
-    fontSize: 16,
-    color: '#555555',
-    textAlign: 'center',
-    lineHeight: 24,
-    marginBottom: 32,
-    maxWidth: 320,
-  },
-  featuresList: {
+  ctaButtons: {
     flexDirection: 'row',
+    gap: 16,
     flexWrap: 'wrap',
     justifyContent: 'center',
-    gap: 20, // If RN version is old, replace with margins on children
   },
-  featureItem: {
-    alignItems: 'center',
-    width: 140,
-    padding: 16,
-    backgroundColor: '#FFFFFF',
-    borderRadius: 12,
+  primaryCTA: {
+    backgroundColor: 'rgba(255, 255, 255, 0.95)',
+    paddingHorizontal: 32,
+    paddingVertical: 16,
+    borderRadius: 16,
     shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.1,
-    shadowRadius: 4,
-    elevation: 3,
-    borderWidth: 1,
-    borderColor: '#E5EAF5',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.3,
+    shadowRadius: 8,
+    elevation: 6,
   },
-  featureIcon: {
-    fontSize: 32,
-    marginBottom: 8,
+  primaryCTAText: {
+    color: '#667eea',
+    fontSize: 17,
+    fontWeight: '700',
   },
-  featureText: {
-    fontSize: 14,
-    fontWeight: '600',
-    color: '#1E3A8A',
-    textAlign: 'center',
+  secondaryCTA: {
+    backgroundColor: 'rgba(255, 255, 255, 0.25)',
+    paddingHorizontal: 32,
+    paddingVertical: 16,
+    borderRadius: 16,
+    borderWidth: 2,
+    borderColor: 'rgba(255, 255, 255, 0.5)',
   },
-  ctaSection: {
+  secondaryCTAText: {
+    color: '#FFFFFF',
+    fontSize: 17,
+    fontWeight: '700',
+  },
+  featuresSection: {
     paddingHorizontal: 24,
-    paddingVertical: 40,
-    alignItems: 'center',
-    backgroundColor: '#EAF2FF',
+    paddingVertical: 60,
   },
-  ctaTitle: {
-    fontSize: 24,
-    fontWeight: 'bold',
-    color: '#1E3A8A',
+  featuresTitle: {
+    fontSize: 32,
+    fontWeight: '800',
+    color: '#FFFFFF',
     textAlign: 'center',
     marginBottom: 12,
   },
-  ctaSubtitle: {
+  featuresSubtitle: {
     fontSize: 16,
-    color: '#666666',
+    color: 'rgba(255, 255, 255, 0.8)',
     textAlign: 'center',
-    maxWidth: 280,
-    marginBottom: 24,
+    marginBottom: 40,
+    fontWeight: '500',
   },
-  ctaButtonRow: {
-    flexDirection: 'column',
-    gap: 12, // If RN version is old, replace with marginTop on buttons
-    width: '100%',
+  featuresGrid: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: 16,
+    justifyContent: 'center',
   },
-  ctaButton: {
-    borderRadius: 12,
-    paddingVertical: 16,
-    paddingHorizontal: 32,
-    alignItems: 'center',
+  featureCard: {
+    width: '47%',
+    minWidth: 160,
+    borderRadius: 20,
+    overflow: 'hidden',
     shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.1,
-    shadowRadius: 4,
-    elevation: 3,
+    shadowOffset: { width: 0, height: 6 },
+    shadowOpacity: 0.3,
+    shadowRadius: 12,
+    elevation: 8,
   },
-  primaryButton: {
-    backgroundColor: '#2563EB',
+  featureGradient: {
+    padding: 24,
+    minHeight: 180,
+    justifyContent: 'space-between',
   },
-  primaryButtonText: {
+  featureCardIcon: {
+    fontSize: 48,
+    marginBottom: 12,
+  },
+  featureCardTitle: {
+    fontSize: 18,
+    fontWeight: '800',
     color: '#FFFFFF',
-    fontSize: 16,
+    marginBottom: 8,
+  },
+  featureCardDesc: {
+    fontSize: 13,
+    color: 'rgba(255, 255, 255, 0.9)',
+    lineHeight: 18,
+    fontWeight: '500',
+  },
+  statsSection: {
+    flexDirection: 'row',
+    backgroundColor: 'rgba(255, 255, 255, 0.15)',
+    marginHorizontal: 24,
+    borderRadius: 20,
+    padding: 24,
+    justifyContent: 'space-around',
+    alignItems: 'center',
+    marginBottom: 40,
+  },
+  statItem: {
+    alignItems: 'center',
+  },
+  statNumber: {
+    fontSize: 28,
+    fontWeight: '800',
+    color: '#FFFFFF',
+    marginBottom: 4,
+  },
+  statLabel: {
+    fontSize: 12,
+    color: 'rgba(255, 255, 255, 0.8)',
     fontWeight: '600',
   },
-  secondaryButton: {
-    backgroundColor: '#FFFFFF',
-    borderWidth: 2,
-    borderColor: '#2563EB',
+  statDivider: {
+    width: 1,
+    height: 40,
+    backgroundColor: 'rgba(255, 255, 255, 0.3)',
   },
-  secondaryButtonText: {
-    color: '#2563EB',
+  finalCTA: {
+    paddingHorizontal: 24,
+    paddingVertical: 40,
+    alignItems: 'center',
+  },
+  finalCTATitle: {
+    fontSize: 32,
+    fontWeight: '800',
+    color: '#FFFFFF',
+    textAlign: 'center',
+    marginBottom: 12,
+  },
+  finalCTASubtitle: {
     fontSize: 16,
-    fontWeight: '600',
+    color: 'rgba(255, 255, 255, 0.9)',
+    textAlign: 'center',
+    marginBottom: 32,
+    fontWeight: '500',
+  },
+  finalCTAButton: {
+    backgroundColor: 'rgba(255, 255, 255, 0.95)',
+    paddingHorizontal: 48,
+    paddingVertical: 18,
+    borderRadius: 16,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 6 },
+    shadowOpacity: 0.3,
+    shadowRadius: 12,
+    elevation: 8,
+  },
+  finalCTAButtonText: {
+    color: '#667eea',
+    fontSize: 18,
+    fontWeight: '800',
   },
 });
