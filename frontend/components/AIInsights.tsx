@@ -209,7 +209,7 @@ export default function AIInsights({ onBack }: AIInsightsProps) {
   return (
     <View style={styles.container}>
       <LinearGradient
-        colors={['#43e97b', '#38f9d7']}
+        colors={['#667eea', '#764ba2']}
         start={{ x: 0, y: 0 }}
         end={{ x: 1, y: 1 }}
         style={styles.gradientHeader}
