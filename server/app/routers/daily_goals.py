@@ -167,8 +167,26 @@ async def bulk_create_or_update_tasks(
     current_user: dict = Depends(get_current_user_optional),
     db: AsyncIOMotorDatabase = Depends(get_db)
 ):
-    """Bulk create or update daily tasks for a date."""
+    """Bulk create or update daily tasks for a date. This replaces all tasks for the date."""
     user_id = current_user.get("user_id") if current_user else tasks[0].user_id if tasks else "guest"
+    
+    # Get the date from the first task (all tasks should have the same date)
+    date = tasks[0].date if tasks else None
+    
+    if date:
+        # Get all existing tasks for this user and date
+        existing_tasks = await db.daily_tasks.find({
+            "user_id": user_id,
+            "date": date
+        }).to_list(length=100)
+        
+        # Get task_ids from the new task list
+        new_task_ids = {task.task_id for task in tasks}
+        
+        # Delete tasks that are no longer in the new list
+        for existing in existing_tasks:
+            if existing["task_id"] not in new_task_ids:
+                await db.daily_tasks.delete_one({"_id": existing["_id"]})
     
     result_tasks = []
     for task_data in tasks:
