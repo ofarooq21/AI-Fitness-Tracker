@@ -2,9 +2,12 @@ import React, { useEffect, useMemo, useState } from 'react';
 import { View, Text, TouchableOpacity, FlatList, StyleSheet, SafeAreaView, TextInput } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import { GoalsService, GoalOut } from '../services/goalsService';
+import { AuthService } from '../services/authService';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { DailyTask, computeDailyProgress, ensureDefaults, toggleCheckboxTask, updateCounterTask } from '../utils/dailyGoalsUtils';
 import { showConfirm } from '../utils/webAlert';
+
+const API_BASE_URL = 'http://localhost:8000';
 
 interface GoalsListProps {
   onBack: () => void;
@@ -16,20 +19,74 @@ export default function GoalsList({ onBack }: GoalsListProps) {
   const [newTaskName, setNewTaskName] = useState('');
   const [newTaskTarget, setNewTaskTarget] = useState('');
   const [newTaskUnit, setNewTaskUnit] = useState('');
+  const [userId, setUserId] = useState<string>('guest');
+
+  useEffect(() => {
+    AuthService.getCurrentUser().then(u => setUserId(u?.id || 'guest')).catch(() => setUserId('guest'));
+  }, []);
 
   useEffect(() => {
     loadDailyTasks();
-  }, [selectedDate]);
+  }, [selectedDate, userId]);
 
   const storageKey = (date: string) => `daily_goals_tasks_${date}`;
 
   const loadDailyTasks = async () => {
     try {
+      // Try to load from backend first if authenticated
+      if (userId && userId !== 'guest') {
+        try {
+          const token = await AuthService.getAuthToken();
+          const headers: HeadersInit = {
+            'Content-Type': 'application/json',
+          };
+          if (token) {
+            headers['Authorization'] = `Bearer ${token}`;
+          }
+
+          const response = await fetch(`${API_BASE_URL}/daily-goals?date=${selectedDate}`, {
+            method: 'GET',
+            headers,
+          });
+
+          if (response.ok) {
+            const backendTasks = await response.json();
+            
+            // Convert backend format to frontend format
+            const convertedTasks: DailyTask[] = backendTasks.map((bt: any) => ({
+              id: bt.task_id,
+              name: bt.label,
+              type: bt.type,
+              target: bt.target,
+              unit: bt.unit,
+              value: bt.current,
+              done: bt.done,
+              isCustom: bt.is_custom,
+              backendId: bt.id // Store backend ID for updates/deletes
+            }));
+
+            const defaultIds = ['water', 'steps', 'protein', 'workout'];
+            const markedTasks = convertedTasks.map(t => ({
+              ...t,
+              isCustom: t.isCustom !== undefined ? t.isCustom : !defaultIds.includes(t.id)
+            }));
+
+            const tasksWithDefaults = ensureDefaults(markedTasks.length > 0 ? markedTasks : undefined);
+            setTasks(tasksWithDefaults);
+            
+            // Also save to local storage as cache
+            await AsyncStorage.setItem(storageKey(selectedDate), JSON.stringify(tasksWithDefaults));
+            return;
+          }
+        } catch (error) {
+          // Fall back to local storage if backend fails
+        }
+      }
+
+      // Fallback: Load from local storage
       const json = await AsyncStorage.getItem(storageKey(selectedDate));
       const arr: DailyTask[] | null = json ? JSON.parse(json) : null;
       
-      // Mark old custom tasks that don't have isCustom flag
-      // Default tasks have specific IDs: water, steps, protein, workout
       const defaultIds = ['water', 'steps', 'protein', 'workout'];
       const markedTasks = arr?.map(t => ({
         ...t,
@@ -38,7 +95,6 @@ export default function GoalsList({ onBack }: GoalsListProps) {
       
       setTasks(ensureDefaults(markedTasks));
       
-      // Save back with isCustom flags
       if (markedTasks && markedTasks.length > 0) {
         await AsyncStorage.setItem(storageKey(selectedDate), JSON.stringify(markedTasks));
       }
@@ -49,7 +105,45 @@ export default function GoalsList({ onBack }: GoalsListProps) {
 
   const saveDailyTasks = async (next: DailyTask[]) => {
     setTasks(next);
+    
+    // Save to local storage immediately
     await AsyncStorage.setItem(storageKey(selectedDate), JSON.stringify(next));
+
+    // Sync to backend if authenticated
+    if (userId && userId !== 'guest') {
+      try {
+        const token = await AuthService.getAuthToken();
+        const headers: HeadersInit = {
+          'Content-Type': 'application/json',
+        };
+        if (token) {
+          headers['Authorization'] = `Bearer ${token}`;
+        }
+
+        // Convert tasks to backend format
+        const backendTasks = next.map(task => ({
+          user_id: userId,
+          date: selectedDate,
+          task_id: task.id,
+          label: task.name,
+          type: task.type,
+          target: task.target || null,
+          unit: task.unit || null,
+          current: task.type === 'counter' ? (task.value || 0) : 0,
+          done: task.type === 'checkbox' ? (task.done || false) : false,
+          is_custom: task.isCustom || false
+        }));
+
+        // Bulk create/update
+        await fetch(`${API_BASE_URL}/daily-goals/bulk`, {
+          method: 'POST',
+          headers,
+          body: JSON.stringify(backendTasks)
+        });
+      } catch (error) {
+        // Silent fail - local storage already updated
+      }
+    }
   };
 
   const pct = useMemo(() => computeDailyProgress(tasks), [tasks]);

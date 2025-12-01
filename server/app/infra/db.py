@@ -38,6 +38,12 @@ async def _create_indexes(db: AsyncIOMotorDatabase):
         await db.goals.create_index([("user_id", 1), ("is_primary", 1)])
         await db.goals.create_index([("created_at", -1)])
         
+        # Daily tasks collection indexes
+        await db.daily_tasks.create_index([("user_id", 1)])
+        await db.daily_tasks.create_index([("user_id", 1), ("date", 1)])
+        await db.daily_tasks.create_index([("user_id", 1), ("date", 1), ("task_id", 1)], unique=True)
+        await db.daily_tasks.create_index([("created_at", -1)])
+        
     except Exception as e:
         logger.error(f"Failed to create database indexes: {e}")
         raise

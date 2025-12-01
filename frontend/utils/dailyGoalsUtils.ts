@@ -9,6 +9,8 @@ export interface DailyTask {
   value?: number;  // current value for counter
   completed?: boolean; // for checkbox
   isCustom?: boolean; // for custom tasks that can be deleted
+  backendId?: string; // backend ID for sync
+  done?: boolean; // alias for completed (backend uses 'done')
 }
 
 export function computeDailyProgress(tasks: DailyTask[]): number {
