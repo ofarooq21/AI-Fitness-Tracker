@@ -137,19 +137,16 @@ export default function MacroTracker({ onBackToHome }: MacroTrackerProps) {
 
           if (!response.ok) {
             const errorData = await response.json().catch(() => ({}));
-            console.error('Failed to save meal to backend:', errorData);
             throw new Error(errorData.detail || 'Failed to save meal to server');
           }
           
           const savedMeal = await response.json();
-          console.log('Meal saved to backend successfully:', savedMeal);
           
           // Store backend ID for future deletion
           meal.backendId = savedMeal.id;
           
           errorLogger.logInfo('Meal saved to backend', { userId, mealName: meal.name, backendId: savedMeal.id });
         } catch (error) {
-          console.error('Error saving meal to backend:', error);
           errorLogger.logError('Failed to save meal to backend', error as Error, { userId });
           // Don't show alert - just log the error and continue with local save
         }
@@ -270,13 +267,9 @@ export default function MacroTracker({ onBackToHome }: MacroTrackerProps) {
             });
 
             if (response.ok) {
-              console.log('Meal deleted from backend successfully');
               errorLogger.logInfo('Meal deleted from backend', { userId, backendId: mealToDelete.backendId });
-            } else {
-              console.error('Failed to delete meal from backend:', response.status);
             }
           } catch (error) {
-            console.error('Error deleting meal from backend:', error);
             errorLogger.logError('Failed to delete meal from backend', error as Error, { userId });
           }
         }

@@ -69,9 +69,8 @@ export default function AIInsights({ onBack }: AIInsightsProps) {
         const { AuthService } = await import('../services/authService');
         token = await AuthService.getAuthToken();
         user = await AuthService.getCurrentUser();
-        console.log('Auth status - Token:', token ? 'YES' : 'NO', 'User:', user);
       } catch (e) {
-        console.log('Auth error:', e);
+        // Auth not available
       }
       
       // Get daily tasks from localStorage
@@ -85,10 +84,9 @@ export default function AIInsights({ onBack }: AIInsightsProps) {
           const tasks = JSON.parse(tasksJson);
           // Count custom tasks (tasks with isCustom flag)
           dailyTasksCount = tasks.filter((t: any) => t.isCustom === true).length;
-          console.log('Daily custom tasks count:', dailyTasksCount);
         }
       } catch (e) {
-        console.log('Could not load daily tasks:', e);
+        // Could not load daily tasks
       }
       
       const headers: HeadersInit = {
@@ -97,19 +95,12 @@ export default function AIInsights({ onBack }: AIInsightsProps) {
       
       if (token) {
         headers['Authorization'] = `Bearer ${token}`;
-        console.log('Sending request WITH auth token');
-      } else {
-        console.log('Sending request WITHOUT auth token (will use demo data)');
       }
-      
-      console.log('Fetching insights from:', `${API_BASE_URL}/insights/ai`);
       
       const response = await fetch(`${API_BASE_URL}/insights/ai`, {
         method: 'GET',
         headers,
       });
-
-      console.log('Response status:', response.status);
 
       if (!response.ok) {
         const errorData = await response.json().catch(() => ({}));
@@ -125,7 +116,6 @@ export default function AIInsights({ onBack }: AIInsightsProps) {
       
       setInsights(data);
     } catch (error: any) {
-      console.error('Error loading insights:', error);
       let errorMessage = 'Failed to load AI insights.';
       
       if (error.message.includes('Failed to fetch') || error.message.includes('NetworkError')) {

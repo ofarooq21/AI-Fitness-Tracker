@@ -1,293 +1,301 @@
-# AI Fitness Tracker
+# 🍽️ NutrifyAI - AI-Powered Fitness & Nutrition Tracker
 
-Environment setup for **Sprint 0** (Python version).
+A modern, full-stack fitness and nutrition tracking application with AI-powered insights, built with React Native Web, FastAPI, and MongoDB.
 
-## Setup
+![NutrifyAI](https://img.shields.io/badge/NutrifyAI-v1.0.0-purple)
+![License](https://img.shields.io/badge/license-MIT-blue)
 
-```bash
-git clone https://github.com/ofarooq21/AI-Fitness-Tracker.git
-cd AI-Fitness-Tracker
-python -m venv .venv
-source .venv/bin/activate   # On Windows: .venv\Scripts\activate
-pip install -r requirements.txt
-```
+## ✨ Features
 
----
+### 🎯 Core Functionality
+- **Macro Tracker** - Log meals with detailed macronutrient tracking
+- **Workout Tracker** - Track exercises, sets, reps, and weights
+- **Daily Goals** - Set and monitor daily fitness goals (water, steps, protein, custom tasks)
+- **AI Insights** - Get personalized fitness and nutrition recommendations powered by OpenAI
 
-# AI Fitness + Nutrition Tracker
+### 🎨 Modern UI/UX
+- Beautiful gradient designs across all pages
+- Responsive and mobile-friendly
+- Smooth animations and transitions
+- Intuitive navigation and user experience
 
-A comprehensive fitness and nutrition tracking application with AI-powered meal analysis and planning capabilities.
+### 🔐 User Management
+- Secure authentication with JWT tokens
+- User registration and login
+- Profile management
+- Data persistence per user
 
 ## 🚀 Quick Start
 
 ### Prerequisites
 
-- **Python 3.11+** (required)
-- **Docker and Docker Compose** (recommended for full stack)
-- **MongoDB** (if running without Docker)
-- **Redis** (if running without Docker)
+- **Node.js 18+** and **npm**
+- **Docker** and **Docker Compose**
+- **OpenAI API Key** (for AI insights)
 
-### Automated Setup (Recommended)
+### Installation
 
 1. **Clone the repository:**
    ```bash
-   git clone <your-repo-url>
-   cd ai-fit-tracker-starter
+   git clone https://github.com/ofarooq21/AI-Fitness-Tracker.git
+   cd AI-Fitness-Tracker
    ```
 
-2. **Run the setup script:**
+2. **Set up environment variables:**
    ```bash
-   python setup.py
+   cd docker
+   cp .env.example .env
+   # Edit .env and add your OPENAI_API_KEY
    ```
 
-3. **Start the application:**
-   ```bash
-   # Option A: Docker (recommended)
-   cd docker && docker-compose up -d
-   
-   # Option B: Local development
-   cd server && uvicorn app.main:app --reload
-   ```
-
-4. **Access the application:**
-   - API Documentation: http://localhost:8000/docs
-   - Health Check: http://localhost:8000/health/health
-   - MinIO Console: http://localhost:9001 (admin/admin)
-
-### Manual Setup
-
-#### Option 1: Full Stack with Docker (Recommended)
-
-1. **Start all services:**
+3. **Start the backend services:**
    ```bash
    cd docker
    docker-compose up -d
    ```
 
-2. **Access the application:**
+4. **Install frontend dependencies:**
+   ```bash
+   cd ../frontend
+   npm install
+   ```
+
+5. **Start the frontend:**
+   ```bash
+   npm run web
+   ```
+
+6. **Access the application:**
+   - Frontend: http://localhost:8081
    - API Documentation: http://localhost:8000/docs
    - Health Check: http://localhost:8000/health/health
-   - MinIO Console: http://localhost:9001 (admin/admin)
-
-3. **Stop services:**
-   ```bash
-   docker-compose down
-   ```
-
-#### Option 2: Local Development
-
-1. **Install dependencies:**
-   ```bash
-   cd server
-   pip install -r requirements.txt
-   ```
-
-2. **Set up environment variables:**
-   ```bash
-   # Copy the example environment file
-   cp env.example .env
-   
-   # Edit .env with your settings
-   nano .env
-   ```
-
-3. **Start the API server:**
-   ```bash
-   uvicorn app.main:app --reload --host 0.0.0.0 --port 8000
-   ```
-
-4. **Start the Celery worker (in another terminal):**
-   ```bash
-   celery -A celery_app.celery_app worker --loglevel=INFO
-   ```
-
-## 📚 API Documentation
-
-### Interactive Documentation
-- **Swagger UI**: http://localhost:8000/docs
-- **ReDoc**: http://localhost:8000/redoc
-- **OpenAPI Schema**: http://localhost:8000/openapi.json
-
-### Core Endpoints
-
-#### Health Check
-- `GET /health/health` - Basic health check
-- `GET /health/detailed` - Detailed health check with database status
-
-#### User Management
-- `POST /users/register` - Register a new user
-- `POST /users/login` - Login user (returns JWT token)
-- `GET /users/me` - Get current user profile (requires authentication)
-- `PUT /users/me` - Update user profile (requires authentication)
-
-#### Meal Tracking
-- `POST /meals` - Create a meal entry
-- `GET /meals` - List meals with filtering
-- `GET /meals/{meal_id}` - Get specific meal
-- `PUT /meals/{meal_id}` - Update meal
-- `DELETE /meals/{meal_id}` - Delete meal
-- `GET /meals/daily/{date}` - Get daily nutrition summary
-
-#### Workout Tracking
-- `POST /workouts` - Create a workout
-- `GET /workouts` - List workouts
-- `GET /workouts/{workout_id}` - Get specific workout
-- `PUT /workouts/{workout_id}` - Update workout
-- `DELETE /workouts/{workout_id}` - Delete workout
-- `GET /workouts/strength/progress` - Get strength progress
-
-#### Goals Management
-- `POST /goals` - Create a goal
-- `GET /goals` - List goals
-- `GET /goals/{goal_id}` - Get specific goal
-- `PUT /goals/{goal_id}` - Update goal
-- `DELETE /goals/{goal_id}` - Delete goal
-- `GET /goals/{goal_id}/progress` - Get goal progress
-
-#### AI-Powered Features (Placeholder)
-- `GET /meals/presign` - Get presigned URL for image upload
-- `POST /meals/scan` - Queue meal image for AI analysis
-- `GET /meals/jobs/{task_id}` - Check AI analysis status
-
-### Authentication
-The API uses JWT (JSON Web Tokens) for authentication. Include the token in the Authorization header:
-```
-Authorization: Bearer <your-jwt-token>
-```
 
 ## 🏗️ Architecture
 
-### Backend Stack
-- **FastAPI** - Modern, fast web framework for building APIs
-- **MongoDB** - Document database for flexible data storage
-- **Redis** - In-memory data store for caching and task queuing
-- **Celery** - Distributed task queue for background processing
-- **MinIO/S3** - Object storage for file uploads
-- **Motor** - Async MongoDB driver
-- **Pydantic** - Data validation and settings management
+### Tech Stack
+
+#### Frontend
+- **React Native Web** - Cross-platform UI framework
+- **Expo** - Development and build tooling
+- **TypeScript** - Type-safe JavaScript
+- **AsyncStorage** - Local data persistence
+- **Expo Linear Gradient** - Beautiful gradient backgrounds
+
+#### Backend
+- **FastAPI** - Modern Python web framework
+- **MongoDB** - NoSQL database
+- **Redis** - Caching and task queue
+- **Celery** - Background task processing
+- **MinIO** - S3-compatible object storage
+- **OpenAI API** - AI-powered insights
 
 ### Project Structure
+
 ```
-server/
-├── app/
-│   ├── core/           # Configuration and utilities
-│   ├── infra/          # External service integrations
-│   ├── models/         # Data models and schemas
-│   ├── routers/        # API route handlers
-│   └── workers/        # Background task workers
-├── celery_app.py       # Celery configuration
-├── requirements.txt    # Python dependencies
-└── Dockerfile         # Container configuration
+ai-fit-tracker-starter/
+├── frontend/                 # React Native Web application
+│   ├── components/          # UI components
+│   │   ├── Dashboard.tsx    # Main dashboard with gradient header
+│   │   ├── MacroTracker.tsx # Meal tracking
+│   │   ├── WorkoutTracker.tsx # Exercise logging
+│   │   ├── AIInsights.tsx   # AI-powered recommendations
+│   │   ├── GoalsList.tsx    # Daily goals management
+│   │   ├── LoginPage.tsx    # User authentication
+│   │   └── RegisterPage.tsx # User registration
+│   ├── services/            # API and auth services
+│   ├── utils/               # Helper functions
+│   └── App.tsx              # Main application entry
+├── server/                  # FastAPI backend
+│   ├── app/
+│   │   ├── core/           # Configuration
+│   │   ├── infra/          # Database and external services
+│   │   ├── models/         # Data models
+│   │   ├── routers/        # API endpoints
+│   │   └── workers/        # Background tasks
+│   └── requirements.txt    # Python dependencies
+└── docker/                 # Docker configuration
+    ├── docker-compose.yml  # Service orchestration
+    └── .env               # Environment variables
 ```
 
-## 🔧 Development
+## 📚 API Documentation
 
-### Running Tests
-```bash
-cd server
-python test_api_simple.py
-```
+### Core Endpoints
 
-### Code Quality
-- All code follows Python type hints
-- Pydantic models for data validation
-- Async/await patterns throughout
-- Comprehensive error handling
-- Database indexes for optimal performance
+#### Authentication
+- `POST /users/register` - Create new user account
+- `POST /users/login` - Login and get JWT token
+- `GET /users/me` - Get current user profile
 
-### Adding New Features
+#### Meals
+- `POST /meals` - Log a meal
+- `GET /meals` - List user's meals
+- `DELETE /meals/{id}` - Delete a meal
 
-1. **Models**: Define data structures in `app/models/`
-2. **Infrastructure**: Add external service clients in `app/infra/`
-3. **Workers**: Create background tasks in `app/workers/`
-4. **Routers**: Implement API endpoints in `app/routers/`
-5. **Configuration**: Add new settings in `app/core/config.py`
+#### Workouts
+- `POST /workouts` - Log a workout
+- `GET /workouts` - List user's workouts
+- `DELETE /workouts/{id}` - Delete a workout
+
+#### Goals
+- `POST /goals` - Create a goal
+- `GET /goals` - List user's goals
+- `PUT /goals/{id}` - Update goal progress
+- `DELETE /goals/{id}` - Delete a goal
+
+#### AI Insights
+- `GET /insights/ai` - Get personalized AI recommendations
+
+**Full API documentation available at:** http://localhost:8000/docs
+
+## 🔧 Configuration
 
 ### Environment Variables
 
-| Variable | Description | Default |
-|----------|-------------|---------|
-| `APP_ENV` | Application environment | `local` |
-| `ALLOWED_ORIGINS` | CORS allowed origins | `*` |
-| `MONGO_URL` | MongoDB connection string | `mongodb://localhost:27017` |
-| `MONGO_DB` | Database name | `fitapp` |
-| `REDIS_URL` | Redis connection string | `redis://localhost:6379/0` |
-| `S3_ENDPOINT` | S3/MinIO endpoint | `http://localhost:9000` |
-| `S3_BUCKET` | S3 bucket name | `uploads` |
-| `JWT_SECRET_KEY` | JWT signing key | `your-secret-key-change-in-production` |
-| `JWT_ACCESS_TOKEN_EXPIRE_MINUTES` | Token expiration | `30` |
+Create a `.env` file in the `docker/` directory:
 
-### Mobile Development
+```env
+# OpenAI Configuration
+OPENAI_API_KEY=sk-your-actual-api-key-here
 
-The mobile app is built with Expo React Native:
+# Database
+MONGO_URL=mongodb://mongo:27017
+MONGO_DB=fitapp
 
-```bash
-cd mobile
-npm install
-npm run web    # For web development
-npm run ios    # For iOS (requires Xcode)
-npm run android # For Android (requires Android Studio)
+# Redis
+REDIS_URL=redis://redis:6379/0
+
+# S3/MinIO
+S3_ENDPOINT=http://minio:9000
+S3_ACCESS_KEY=minioadmin
+S3_SECRET_KEY=minioadmin
+S3_BUCKET=uploads
+
+# JWT
+JWT_SECRET_KEY=your-secret-key-change-in-production
+JWT_ACCESS_TOKEN_EXPIRE_MINUTES=30
+
+# CORS
+ALLOWED_ORIGINS=*
 ```
 
-## 🚧 Current Status
+## 🎨 UI Components
 
-### ✅ Implemented
-- Complete API structure with all core endpoints
-- User authentication system (JWT-based)
-- Meal tracking with manual entry
-- Workout tracking with exercise logging
-- Goals management system
-- Database models and validation
-- Docker Compose setup
-- Health checks and monitoring
+### Gradient Themes
+- **Dashboard**: Purple-pink gradient (`#667eea → #764ba2 → #f093fb`)
+- **Macro Tracker**: Purple gradient (`#667eea → #764ba2`)
+- **Workout Tracker**: Pink-red gradient (`#f093fb → #f5576c`)
+- **AI Insights**: Green gradient (`#43e97b → #38f9d7`)
+- **Daily Goals**: Blue gradient (`#4facfe → #00f2fe`)
+- **Login/Register**: Full-screen purple-pink gradient
 
-### 🔄 In Progress
-- AI-powered meal analysis (placeholder implementation)
-- Advanced nutrition calculations
-- Strength progress forecasting
+### Design System
+- **Typography**: Bold fonts (700-800 weight) for headers
+- **Shadows**: Elevated cards with soft shadows
+- **Borders**: Rounded corners (16-24px radius)
+- **Spacing**: Consistent padding and margins
+- **Colors**: Vibrant gradients with white/translucent overlays
 
-### 📋 Planned Features
-- React Native mobile app
-- Advanced meal planning with optimization
-- AI chatbot integration
-- Comprehensive analytics and reporting
-- Social features and sharing
+## 🧪 Testing
+
+### Frontend Tests
+```bash
+cd frontend
+npm test
+```
+
+### Backend Tests
+```bash
+cd server
+pytest
+```
+
+## 📦 Deployment
+
+### Docker Deployment (Recommended)
+
+1. **Build and start all services:**
+   ```bash
+   cd docker
+   docker-compose up -d --build
+   ```
+
+2. **Check service status:**
+   ```bash
+   docker-compose ps
+   ```
+
+3. **View logs:**
+   ```bash
+   docker-compose logs -f api
+   ```
+
+### Production Considerations
+
+- Set strong `JWT_SECRET_KEY`
+- Use environment-specific `OPENAI_API_KEY`
+- Configure proper `ALLOWED_ORIGINS` for CORS
+- Set up SSL/TLS certificates
+- Configure database backups
+- Set up monitoring and logging
+- Use a reverse proxy (nginx/Caddy)
 
 ## 🔐 Security
 
-- JWT-based authentication
-- Password hashing with bcrypt
-- CORS configuration
-- Input validation with Pydantic
-- Secure file upload with presigned URLs
+- ✅ JWT-based authentication
+- ✅ Password hashing with bcrypt
+- ✅ CORS protection
+- ✅ Input validation with Pydantic
+- ✅ SQL injection prevention (MongoDB)
+- ✅ XSS protection
+- ✅ Rate limiting ready
 
-## 📊 Monitoring
+## 📊 Data Models
 
-- Health check endpoints
-- Structured logging
-- Error tracking and reporting
-- Performance monitoring ready
+### User
+- Profile information (name, email, password)
+- Optional: date of birth, gender, height, weight, activity level
+
+### Meal
+- Name, calories, protein, fat, carbs
+- Meal type (breakfast, lunch, dinner, snack)
+- Portion estimate
+- Timestamp
+
+### Workout
+- Name, date, duration
+- Exercises with sets, reps, and weights
+- Exercise categories (strength, cardio, flexibility, sports)
+
+### Goal
+- Type (long-term or daily)
+- Target metrics
+- Progress tracking
+- Status (active, completed, cancelled)
 
 ## 🤝 Contributing
 
 1. Fork the repository
-2. Create a feature branch
-3. Make your changes
-4. Add tests
-5. Submit a pull request
+2. Create a feature branch (`git checkout -b feature/amazing-feature`)
+3. Commit your changes (`git commit -m 'Add amazing feature'`)
+4. Push to the branch (`git push origin feature/amazing-feature`)
+5. Open a Pull Request
 
-## 📄 License
+## 📝 License
 
-This project is licensed under the MIT License.
+This project is licensed under the MIT License - see the LICENSE file for details.
 
-## 🆘 Support
+## 🙏 Acknowledgments
 
-For questions or issues:
-1. Check the API documentation at `/docs`
-2. Review the health check at `/health/detailed`
-3. Check the logs for error details
-4. Create an issue in the repository
+- OpenAI for AI-powered insights
+- FastAPI for the excellent web framework
+- Expo for React Native tooling
+- MongoDB for flexible data storage
+
+## 📧 Contact
+
+For questions or support, please open an issue on GitHub.
 
 ---
 
-**Note**: This is the base implementation without AI features. AI-powered meal analysis, planning, and chatbot features will be added in subsequent iterations.
+**Built with ❤️ by the NutrifyAI Team**

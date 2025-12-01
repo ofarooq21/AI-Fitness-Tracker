@@ -19,11 +19,6 @@ export default function Dashboard({ onLogout, onShowMacroTracker, onShowWorkoutT
   const [todayMeals, setTodayMeals] = useState(0);
   const [lastWorkout, setLastWorkout] = useState<{ name: string; date: string } | null>(null);
 
-  // Debug: Check if onShowAIInsights is defined
-  useEffect(() => {
-    console.log('Dashboard mounted, onShowAIInsights:', typeof onShowAIInsights);
-  }, [onShowAIInsights]);
-
   useEffect(() => {
     loadUserData();
   }, []);
@@ -47,7 +42,7 @@ export default function Dashboard({ onLogout, onShowMacroTracker, onShowWorkoutT
         setLastWorkout(null);
       }
     } catch (error) {
-      console.error('Error loading user data:', error);
+      // Silent error handling for user data loading
     }
   };
 
