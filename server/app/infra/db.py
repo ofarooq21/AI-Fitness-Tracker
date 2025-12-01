@@ -20,7 +20,6 @@ async def _create_indexes(db: AsyncIOMotorDatabase):
     try:
         # Meals collection indexes
         await db.meals.create_index([("user_id", 1)])
-        await db.meals.create_index([("task_id", 1)], unique=True, sparse=True)
         await db.meals.create_index([("created_at", -1)])
         await db.meals.create_index([("user_id", 1), ("created_at", -1)])
         
