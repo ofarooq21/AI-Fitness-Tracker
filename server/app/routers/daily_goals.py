@@ -171,19 +171,29 @@ async def bulk_create_or_update_tasks(
     """Bulk create or update daily tasks for a date. This replaces all tasks for the date."""
     user_id = current_user.get("user_id") if current_user else (tasks[0].user_id if tasks else "guest")
     
+    print(f"[DEBUG] Bulk sync - user_id: {user_id}, date: {date}, tasks count: {len(tasks)}")
+    
     # Get all existing tasks for this user and date
     existing_tasks = await db.daily_tasks.find({
         "user_id": user_id,
         "date": date
     }).to_list(length=100)
     
+    print(f"[DEBUG] Found {len(existing_tasks)} existing tasks")
+    
     # Get task_ids from the new task list
     new_task_ids = {task.task_id for task in tasks}
+    print(f"[DEBUG] New task_ids: {new_task_ids}")
     
     # Delete tasks that are no longer in the new list
+    deleted_count = 0
     for existing in existing_tasks:
         if existing["task_id"] not in new_task_ids:
+            print(f"[DEBUG] Deleting task: {existing['task_id']} ({existing['label']})")
             await db.daily_tasks.delete_one({"_id": existing["_id"]})
+            deleted_count += 1
+    
+    print(f"[DEBUG] Deleted {deleted_count} tasks")
     
     result_tasks = []
     for task_data in tasks:

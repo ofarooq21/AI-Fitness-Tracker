@@ -135,12 +135,17 @@ export default function GoalsList({ onBack }: GoalsListProps) {
         }));
 
         // Bulk create/update (pass date as query parameter)
-        await fetch(`${API_BASE_URL}/daily-goals/bulk?date=${selectedDate}`, {
+        const response = await fetch(`${API_BASE_URL}/daily-goals/bulk?date=${selectedDate}`, {
           method: 'POST',
           headers,
           body: JSON.stringify(backendTasks)
         });
+
+        if (!response.ok) {
+          console.error('Failed to sync daily tasks to backend:', response.status, response.statusText);
+        }
       } catch (error) {
+        console.error('Error syncing daily tasks to backend:', error);
         // Silent fail - local storage already updated
       }
     }
