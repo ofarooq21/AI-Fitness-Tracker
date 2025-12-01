@@ -10,6 +10,7 @@ import {
   Alert,
   RefreshControl
 } from 'react-native';
+import { LinearGradient } from 'expo-linear-gradient';
 
 const API_BASE_URL = 'http://localhost:8000';
 
@@ -216,24 +217,33 @@ export default function AIInsights({ onBack }: AIInsightsProps) {
   }
 
   return (
-    <SafeAreaView style={styles.container}>
-      <View style={styles.header}>
-        <TouchableOpacity onPress={onBack} style={styles.backButton}>
-          <Text style={styles.backButtonText}>← Back</Text>
-        </TouchableOpacity>
-        <Text style={styles.headerTitle}>AI Insights</Text>
-        <TouchableOpacity 
-          onPress={handleRefresh} 
-          style={styles.refreshButton} 
-          disabled={refreshing}
-        >
-          {refreshing ? (
-            <ActivityIndicator size="small" color="#2563EB" />
-          ) : (
-            <Text style={styles.refreshButtonText}>↻</Text>
-          )}
-        </TouchableOpacity>
-      </View>
+    <View style={styles.container}>
+      <LinearGradient
+        colors={['#43e97b', '#38f9d7']}
+        start={{ x: 0, y: 0 }}
+        end={{ x: 1, y: 1 }}
+        style={styles.gradientHeader}
+      >
+        <SafeAreaView>
+          <View style={styles.header}>
+            <TouchableOpacity onPress={onBack} style={styles.backButton}>
+              <Text style={styles.backButtonText}>← Back</Text>
+            </TouchableOpacity>
+            <Text style={styles.headerTitle}>🤖 AI Insights</Text>
+            <TouchableOpacity 
+              onPress={handleRefresh} 
+              style={styles.refreshButton} 
+              disabled={refreshing}
+            >
+              {refreshing ? (
+                <ActivityIndicator size="small" color="#FFFFFF" />
+              ) : (
+                <Text style={styles.refreshButtonText}>↻</Text>
+              )}
+            </TouchableOpacity>
+          </View>
+        </SafeAreaView>
+      </LinearGradient>
 
       <ScrollView 
         style={styles.content} 
@@ -392,54 +402,53 @@ export default function AIInsights({ onBack }: AIInsightsProps) {
           </>
         )}
       </ScrollView>
-    </SafeAreaView>
+    </View>
   );
 }
 
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#F8FAFF',
+    backgroundColor: '#f8f9fa',
+  },
+  gradientHeader: {
+    paddingBottom: 20,
   },
   header: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
     paddingHorizontal: 20,
-    paddingTop: 20,
-    paddingBottom: 16,
-    backgroundColor: '#FFFFFF',
-    borderBottomWidth: 1,
-    borderBottomColor: '#E5EAF5',
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.05,
-    shadowRadius: 4,
-    elevation: 2,
+    paddingTop: 10,
+    paddingBottom: 10,
   },
   backButton: {
     padding: 8,
     minWidth: 60,
+    backgroundColor: 'rgba(255, 255, 255, 0.25)',
+    borderRadius: 12,
   },
   backButtonText: {
     fontSize: 16,
-    color: '#2563EB',
-    fontWeight: '600',
+    color: '#FFFFFF',
+    fontWeight: '700',
   },
   headerTitle: {
-    fontSize: 20,
-    fontWeight: 'bold',
-    color: '#1E3A8A',
+    fontSize: 24,
+    fontWeight: '800',
+    color: '#FFFFFF',
   },
   refreshButton: {
-    padding: 8,
+    padding: 10,
     minWidth: 40,
     alignItems: 'center',
     justifyContent: 'center',
+    backgroundColor: 'rgba(255, 255, 255, 0.25)',
+    borderRadius: 12,
   },
   refreshButtonText: {
     fontSize: 24,
-    color: '#2563EB',
+    color: '#FFFFFF',
   },
   placeholder: {
     width: 60,
