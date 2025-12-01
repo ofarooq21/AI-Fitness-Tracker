@@ -132,7 +132,7 @@ export default function Dashboard({ onLogout, onShowMacroTracker, onShowWorkoutT
             <Text style={styles.metricValue}>{new Date(user.createdAt).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}</Text>
           </LinearGradient>
           <LinearGradient
-            colors={['#f093fb', '#f5576c']}
+            colors={['#4facfe', '#00f2fe']}
             start={{ x: 0, y: 0 }}
             end={{ x: 1, y: 1 }}
             style={styles.metricCard}
@@ -142,7 +142,7 @@ export default function Dashboard({ onLogout, onShowMacroTracker, onShowWorkoutT
             <Text style={styles.metricValue}>{todayMeals}</Text>
           </LinearGradient>
           <LinearGradient
-            colors={['#4facfe', '#00f2fe']}
+            colors={['#f093fb', '#f5576c']}
             start={{ x: 0, y: 0 }}
             end={{ x: 1, y: 1 }}
             style={styles.metricCard}
